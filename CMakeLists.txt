@@ -1,5 +1,5 @@
 cmake_minimum_required ( VERSION 3.0)       # 支持最低的CMake版本
-project                ( cmakeTest )              # 我的工程名叫red
+project                ( learnOpenGL )              # 我的工程名叫red
 
 # 下面几行设置c++编译选项
 set(CXX_FLAGS -std=c++11 -g -Wall)
@@ -50,6 +50,6 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 add_custom_target(run
     COMMAND make
-    COMMAND ./bin/cmakeTest
+    COMMAND ./bin/learnopengl
     ${PROJECT_SOURCE_DIR}/build
 )
