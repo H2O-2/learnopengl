@@ -163,6 +163,33 @@ src/glad.c.s:
 	$(MAKE) -f CMakeFiles/learnOpenGL.dir/build.make CMakeFiles/learnOpenGL.dir/src/glad.c.s
 .PHONY : src/glad.c.s
 
+src/lighting.o: src/lighting.cpp.o
+
+.PHONY : src/lighting.o
+
+# target to build an object file
+src/lighting.cpp.o:
+	$(MAKE) -f CMakeFiles/learnOpenGL.dir/build.make CMakeFiles/learnOpenGL.dir/src/lighting.cpp.o
+.PHONY : src/lighting.cpp.o
+
+src/lighting.i: src/lighting.cpp.i
+
+.PHONY : src/lighting.i
+
+# target to preprocess a source file
+src/lighting.cpp.i:
+	$(MAKE) -f CMakeFiles/learnOpenGL.dir/build.make CMakeFiles/learnOpenGL.dir/src/lighting.cpp.i
+.PHONY : src/lighting.cpp.i
+
+src/lighting.s: src/lighting.cpp.s
+
+.PHONY : src/lighting.s
+
+# target to generate assembly for a file
+src/lighting.cpp.s:
+	$(MAKE) -f CMakeFiles/learnOpenGL.dir/build.make CMakeFiles/learnOpenGL.dir/src/lighting.cpp.s
+.PHONY : src/lighting.cpp.s
+
 src/shader_s.o: src/shader_s.cpp.o
 
 .PHONY : src/shader_s.o
@@ -190,33 +217,6 @@ src/shader_s.cpp.s:
 	$(MAKE) -f CMakeFiles/learnOpenGL.dir/build.make CMakeFiles/learnOpenGL.dir/src/shader_s.cpp.s
 .PHONY : src/shader_s.cpp.s
 
-src/transformation.o: src/transformation.cpp.o
-
-.PHONY : src/transformation.o
-
-# target to build an object file
-src/transformation.cpp.o:
-	$(MAKE) -f CMakeFiles/learnOpenGL.dir/build.make CMakeFiles/learnOpenGL.dir/src/transformation.cpp.o
-.PHONY : src/transformation.cpp.o
-
-src/transformation.i: src/transformation.cpp.i
-
-.PHONY : src/transformation.i
-
-# target to preprocess a source file
-src/transformation.cpp.i:
-	$(MAKE) -f CMakeFiles/learnOpenGL.dir/build.make CMakeFiles/learnOpenGL.dir/src/transformation.cpp.i
-.PHONY : src/transformation.cpp.i
-
-src/transformation.s: src/transformation.cpp.s
-
-.PHONY : src/transformation.s
-
-# target to generate assembly for a file
-src/transformation.cpp.s:
-	$(MAKE) -f CMakeFiles/learnOpenGL.dir/build.make CMakeFiles/learnOpenGL.dir/src/transformation.cpp.s
-.PHONY : src/transformation.cpp.s
-
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -230,12 +230,12 @@ help:
 	@echo "... src/glad.o"
 	@echo "... src/glad.i"
 	@echo "... src/glad.s"
+	@echo "... src/lighting.o"
+	@echo "... src/lighting.i"
+	@echo "... src/lighting.s"
 	@echo "... src/shader_s.o"
 	@echo "... src/shader_s.i"
 	@echo "... src/shader_s.s"
-	@echo "... src/transformation.o"
-	@echo "... src/transformation.i"
-	@echo "... src/transformation.s"
 .PHONY : help
 
 

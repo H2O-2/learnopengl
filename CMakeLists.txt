@@ -19,7 +19,7 @@ set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 include_directories(${PROJECT_SOURCE_DIR}/src ${PROJECT_SOURCE_DIR}/include)
 
 # 添加要编译的cpp源代码，先只要一个main.cpp
-set(SRC_LIST src/glad.c src/shader_s.cpp src/stb_image.h ${PROJECT_SOURCE_DIR}/src/transformation.cpp)
+set(SRC_LIST src/glad.c src/shader_s.cpp src/stb_image.h ${PROJECT_SOURCE_DIR}/src/lighting.cpp)
 
 # 添加项目的构建目标，一个可执行程序，叫：${PROJECT_NAME}, 也就是文件开头定义的 “red”
 add_executable(${PROJECT_NAME} ${SRC_LIST} )
