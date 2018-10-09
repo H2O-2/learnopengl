@@ -68,6 +68,8 @@
 ehthumbs.db
 Thumbs.db
 
+build/
+
 # JetBrain #
 ######################
 .idea/
