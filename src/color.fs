@@ -3,7 +3,8 @@ out vec4 FragColor;
 
 uniform vec3 objectColor;
 uniform vec3 lightColor;
-uniform vec3 viewPos;
+// use when calculating in world coordinate
+// uniform vec3 viewPos;
 
 in vec3 FragPos;
 in vec3 LightPos;
