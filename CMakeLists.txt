@@ -15,6 +15,9 @@ set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 
+# Config
+configure_file(config/root_directory.h.in config/root_directory.h)
+
 # 添加 ./src 到头文件搜索路径，以后自己编写的头文件如果放在src下的话，就能被编译器搜索到。
 include_directories(${PROJECT_SOURCE_DIR}/src ${PROJECT_SOURCE_DIR}/include)
 

@@ -5,14 +5,19 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
 #include "shader_s.h"
 #include "camera.h"
+#include "fileSystem.h"
 
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void processInput(GLFWwindow* window);
+unsigned int loadTexture(char const *path);
 
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
@@ -63,7 +68,8 @@ int main() {
 
     // compile shaders
     // Shader lightingShader("../src/color.vs", "../src/color.fs");
-    Shader lightingShader("../src/materials.vs", "../src/materials.fs");
+    // Shader lightingShader("../src/materials.vs", "../src/materials.fs");
+    Shader lightingShader("../src/lightingMaps.vs", "../src/lightingMaps.fs");
     Shader lampShader("../src/lamp.vs", "../src/lamp.fs");
 
     float vertices[] = {
@@ -134,6 +140,10 @@ int main() {
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
 
+    unsigned int diffuseMap = loadTexture(FileSystem::getPath("src/lightingMaps.png").c_str());
+    lightingShader.use();
+    lightingShader.setInt("material.diffuse", 0);
+
     while (!glfwWindowShouldClose(window)) {
         float currentFrame = glfwGetTime();
         deltaTime = currentFrame - lastFrame;
@@ -166,6 +176,9 @@ int main() {
 
         glm::mat4 model;
         lightingShader.setMat4("model", model);
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, diffuseMap);
 
         // render
         glBindVertexArray(cubeVAO);
@@ -233,4 +246,38 @@ void processInput(GLFWwindow* window) {
         camera.ProcessKeyboard(LEFT, deltaTime);
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
         camera.ProcessKeyboard(RIGHT, deltaTime);
+}
+
+unsigned int loadTexture(char const *path) {
+    unsigned int textureID;
+    glGenTextures(1, &textureID);
+
+    int width, height, nrComponent;
+    unsigned char *data = stbi_load(path, &width, &height, &nrComponent, 0);
+    if (data) {
+        GLenum format = 0;
+        if (nrComponent == 1) {
+            format = GL_RED;
+        } else if (nrComponent == 3) {
+            format = GL_RGB;
+        } else if (nrComponent == 4) {
+            format = GL_RGBA;
+        }
+
+        glBindTexture(GL_TEXTURE_2D, textureID);
+        glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        stbi_image_free(data);
+    } else {
+        std::cout << "Texture failed to load at path: " << path << std::endl;
+        stbi_image_free(data);
+    }
+
+    return textureID;
 }
