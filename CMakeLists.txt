@@ -22,7 +22,7 @@ configure_file(config/root_directory.h.in config/root_directory.h)
 include_directories(${PROJECT_SOURCE_DIR}/src ${PROJECT_SOURCE_DIR}/include)
 
 # 添加要编译的cpp源代码，先只要一个main.cpp
-set(SRC_LIST src/glad.c src/shader_s.cpp src/stb_image.h ${PROJECT_SOURCE_DIR}/src/mesh.cpp)
+set(SRC_LIST src/glad.c src/shader_s.cpp src/stb_image.h ${PROJECT_SOURCE_DIR}/src/model.cpp)
 
 # 添加项目的构建目标，一个可执行程序，叫：${PROJECT_NAME}, 也就是文件开头定义的 “red”
 add_executable(${PROJECT_NAME} ${SRC_LIST} )
@@ -31,6 +31,15 @@ find_package(glfw3 3.2 REQUIRED)
 
 # 让项目的可执行程序red链接glfw库
 target_link_libraries(${PROJECT_NAME} glfw)
+
+find_package(ASSIMP REQUIRED)
+message(STATUS "Found ASSIMP in ${ASSIMP_INCLUDE_DIR}")
+if (assimp_FOUND)
+    set(ASSIMP_LIBRARY "assimp")
+    add_library(${ASSIMP_LIBRARY} SHARED IMPORTED)
+    set_target_properties(${ASSIMP_LIBRARY} PROPERTIES IMPORTED_LOCATION "${ASSIMP_LIBRARY_DIRS}/libassimp.so")
+endif(assimp_FOUND)
+target_link_libraries(${PROJECT_NAME} ${ASSIMP_LIBRARY})
 
 # 让CMake去系统搜索OpenGL库，找不到就报错(REQUIRED).
 # 找到了之后就会有两个变量可用：OPENGL_INCLUDE_DIR 和 OPENGL_gl_LIBRARY
