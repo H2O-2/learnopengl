@@ -15,6 +15,9 @@ set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 
+# Modules
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/modules/")
+
 # Config
 configure_file(config/root_directory.h.in config/root_directory.h)
 
@@ -32,13 +35,8 @@ find_package(glfw3 3.2 REQUIRED)
 # 让项目的可执行程序red链接glfw库
 target_link_libraries(${PROJECT_NAME} glfw)
 
-find_package(ASSIMP REQUIRED)
-message(STATUS "Found ASSIMP in ${ASSIMP_INCLUDE_DIR}")
-if (assimp_FOUND)
-    set(ASSIMP_LIBRARY "assimp")
-    add_library(${ASSIMP_LIBRARY} SHARED IMPORTED)
-    set_target_properties(${ASSIMP_LIBRARY} PROPERTIES IMPORTED_LOCATION "${ASSIMP_LIBRARY_DIRS}/libassimp.so")
-endif(assimp_FOUND)
+find_package(assimp REQUIRED)
+include_directories(${ASSIMP_INCLUDE_DIRS})
 target_link_libraries(${PROJECT_NAME} ${ASSIMP_LIBRARY})
 
 # 让CMake去系统搜索OpenGL库，找不到就报错(REQUIRED).
