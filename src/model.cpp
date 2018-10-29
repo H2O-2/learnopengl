@@ -1,11 +1,16 @@
 #include "model.h"
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
+unsigned int TextureFromFile(const char *path, const string &directory, bool gamma = false);
+
 Model::Model(char const *path) {
     loadModel(path);
 }
 
 void Model::Draw(Shader shader) {
-    for (int i = 0; i < meshes.size(); ++i) {
+    for (unsigned int i = 0; i < meshes.size(); ++i) {
         meshes[i].Draw(shader);
     }
 }
@@ -24,7 +29,7 @@ void Model::loadModel(string path) {
 }
 
 void Model::processNode(aiNode *node, const aiScene *scene) {
-    for (unsigned int i = 0; i < node->mNumChildren; ++i) {
+    for (unsigned int i = 0; i < node->mNumMeshes; ++i) {
         aiMesh *mesh = scene->mMeshes[node->mMeshes[i]];
         meshes.push_back(processMesh(mesh, scene));
     }
@@ -79,6 +84,8 @@ Mesh Model::processMesh(aiMesh *mesh, const aiScene *scene) {
         vector<Texture> specularMaps = loadMaterialTexture(material, aiTextureType_SPECULAR, "texture_specular");
         textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
     }
+
+    return Mesh(vertices, indices, textures);
 }
 
 
@@ -110,7 +117,7 @@ vector<Texture> Model::loadMaterialTexture(aiMaterial *mat, aiTextureType type, 
     return textures;
 }
 
-unsigned int Model::TextureFromFile(const char *path, const string &directory, bool gamma = false) {
+unsigned int TextureFromFile(const char *path, const string &directory, bool gamma) {
     string filename = string(path);
     filename = directory + '/' + filename;
 

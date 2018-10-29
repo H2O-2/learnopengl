@@ -13,8 +13,6 @@
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
 #include "shader_s.h"
 #include "mesh.h"
 
@@ -34,5 +32,4 @@ private:
     void processNode(aiNode *node, const aiScene *scene);
     Mesh processMesh(aiMesh *mesh, const aiScene *scene);
     vector<Texture> loadMaterialTexture(aiMaterial *mat, aiTextureType type, string typeName);
-    unsigned int TextureFromFile(const char *path, const string &directory, bool gamma);
 };
