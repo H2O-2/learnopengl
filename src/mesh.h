@@ -14,12 +14,13 @@ using namespace glm;
 struct Vertex {
     vec3 Position;
     vec3 Normal;
-    vec3 TexCoord;
+    vec2 TexCoord;
 };
 
 struct Texture {
     unsigned int id;
     string type;
+    string path;
 };
 
 class Mesh {
