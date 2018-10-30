@@ -28,8 +28,8 @@ void Mesh::Draw(Shader shader) {
             number = to_string(heightNr++);
         }
 
-        // shader.setFloat(("material." + name + number).c_str(), i);
-        glUniform1i(glGetUniformLocation(shader.shaderProgram, (name + number).c_str()), i);
+        shader.setFloat(("material." + name + number).c_str(), i);
+        // glUniform1i(glGetUniformLocation(shader.shaderProgram, (name + number).c_str()), i);
         glBindTexture(GL_TEXTURE_2D, texture[i].id);
     }
     glActiveTexture(GL_TEXTURE0);

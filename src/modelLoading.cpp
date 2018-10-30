@@ -73,6 +73,70 @@ int main()
     // build and compile shaders
     // -------------------------
     Shader ourShader("../src/modelLoading.vs", "../src/modelLoading.fs");
+    Shader lampShader("../src/lamp.vs", "../src/lamp.fs");
+
+    float vertices[] = {
+        // positions          // normals           // texture coords
+        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  0.0f,
+         0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  0.0f,
+         0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  1.0f,
+         0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  1.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  0.0f,
+
+        -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,
+         0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  0.0f,
+         0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  1.0f,
+         0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  1.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  1.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,
+
+        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
+        -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  1.0f,  1.0f,
+        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
+        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
+        -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  0.0f,  0.0f,
+        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
+
+         0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
+         0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  1.0f,
+         0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
+         0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
+         0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  0.0f,  0.0f,
+         0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
+
+        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f,  1.0f,
+         0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  1.0f,  1.0f,
+         0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f,  0.0f,
+         0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f,  0.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  0.0f,  0.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f,  1.0f,
+
+        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f,
+         0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  1.0f,  1.0f,
+         0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f,  0.0f,
+         0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f,  0.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  0.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f
+    };
+
+    glm::vec3 pointLightPositions[] = {
+        glm::vec3( 0.7f,  0.2f,  2.0f),
+        glm::vec3( 2.3f, -3.3f, -4.0f),
+        glm::vec3(-4.0f,  2.0f, -12.0f),
+        glm::vec3( 0.0f,  0.0f, -3.0f)
+    };
+
+    unsigned int VBO, lightVAO;
+    glGenBuffers(1, &VBO);
+    glGenVertexArrays(1, &lightVAO);
+
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+    glBindVertexArray(lightVAO);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
 
     // load models
     // -----------
@@ -109,6 +173,44 @@ int main()
         ourShader.setMat4("projection", projection);
         ourShader.setMat4("view", view);
 
+        ourShader.setVec3("viewPos", camera.Position);
+
+        ourShader.setVec3("material.ambient", 1.0f, 0.5f, 0.31f);
+        ourShader.setFloat("material.shininess", 32.0f);
+
+        // point light 1
+        ourShader.setVec3("pointLights[0].position", pointLightPositions[0]);
+        ourShader.setVec3("pointLights[0].ambient", 0.05f, 0.05f, 0.05f);
+        ourShader.setVec3("pointLights[0].diffuse", 0.8f, 0.8f, 0.8f);
+        ourShader.setVec3("pointLights[0].specular", 1.0f, 1.0f, 1.0f);
+        ourShader.setFloat("pointLights[0].constant", 1.0f);
+        ourShader.setFloat("pointLights[0].linear", 0.09);
+        ourShader.setFloat("pointLights[0].quadratic", 0.032);
+        // point light 2
+        ourShader.setVec3("pointLights[1].position", pointLightPositions[1]);
+        ourShader.setVec3("pointLights[1].ambient", 0.05f, 0.05f, 0.05f);
+        ourShader.setVec3("pointLights[1].diffuse", 0.8f, 0.8f, 0.8f);
+        ourShader.setVec3("pointLights[1].specular", 1.0f, 1.0f, 1.0f);
+        ourShader.setFloat("pointLights[1].constant", 1.0f);
+        ourShader.setFloat("pointLights[1].linear", 0.09);
+        ourShader.setFloat("pointLights[1].quadratic", 0.032);
+        // point light 3
+        ourShader.setVec3("pointLights[2].position", pointLightPositions[2]);
+        ourShader.setVec3("pointLights[2].ambient", 0.05f, 0.05f, 0.05f);
+        ourShader.setVec3("pointLights[2].diffuse", 0.8f, 0.8f, 0.8f);
+        ourShader.setVec3("pointLights[2].specular", 1.0f, 1.0f, 1.0f);
+        ourShader.setFloat("pointLights[2].constant", 1.0f);
+        ourShader.setFloat("pointLights[2].linear", 0.09);
+        ourShader.setFloat("pointLights[2].quadratic", 0.032);
+        // point light 4
+        ourShader.setVec3("pointLights[3].position", pointLightPositions[3]);
+        ourShader.setVec3("pointLights[3].ambient", 0.05f, 0.05f, 0.05f);
+        ourShader.setVec3("pointLights[3].diffuse", 0.8f, 0.8f, 0.8f);
+        ourShader.setVec3("pointLights[3].specular", 1.0f, 1.0f, 1.0f);
+        ourShader.setFloat("pointLights[3].constant", 1.0f);
+        ourShader.setFloat("pointLights[3].linear", 0.09);
+        ourShader.setFloat("pointLights[3].quadratic", 0.032);
+
         // render the loaded model
         glm::mat4 model;
         model = glm::translate(model, glm::vec3(0.0f, -1.75f, 0.0f)); // translate it down so it's at the center of the scene
@@ -116,6 +218,17 @@ int main()
         ourShader.setMat4("model", model);
         ourModel.Draw(ourShader);
 
+        lampShader.use();
+        lampShader.setMat4("projection", projection);
+        lampShader.setMat4("view", view);
+        glBindVertexArray(lightVAO);
+        for (int i = 0; i < 4; i++) {
+            model = glm::mat4();
+            model = glm::translate(model, pointLightPositions[i]);
+            model = glm::scale(model, glm::vec3(0.2f));
+            lampShader.setMat4("model", model);
+            glDrawArrays(GL_TRIANGLES, 0, 36);
+        }
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
