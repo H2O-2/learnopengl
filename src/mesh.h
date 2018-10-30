@@ -15,6 +15,8 @@ struct Vertex {
     vec3 Position;
     vec3 Normal;
     vec2 TexCoord;
+    vec3 Tangent;
+    vec3 Bitangent;
 };
 
 struct Texture {
@@ -35,6 +37,8 @@ private:
     unsigned VAO, VBO, EBO;
     const string DIFFUSE = "texture_diffuse";
     const string SPECULAR = "texture_specular";
+    const string NORMAL = "texture_normal";
+    const string HEIGHT = "texture_height";
 
     void setupMesh();
 };

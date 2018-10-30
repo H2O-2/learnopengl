@@ -79,7 +79,7 @@ int main()
     Model ourModel(FileSystem::getPath("src/nanosuit/nanosuit.obj").c_str());
 
     // draw in wireframe
-    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
     // render loop
     // -----------
