@@ -71,7 +71,9 @@ int main()
     // configure global opengl state
     // -----------------------------
     glEnable(GL_DEPTH_TEST);
-    glDepthFunc(GL_LESS); // always pass the depth test (same effect as glDisable(GL_DEPTH_TEST))
+    // glDepthFunc(GL_LESS); // always pass the depth test (same effect as glDisable(GL_DEPTH_TEST))
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     // build and compile shaders
     // -------------------------
@@ -195,6 +197,14 @@ int main()
     unsigned int grassTexture = loadTexture(FileSystem::getPath("src/grass.png").c_str());
     unsigned int windowTexture = loadTexture(FileSystem::getPath("src/window.png").c_str());
 
+    vector<glm::vec3> windows {
+        glm::vec3(-1.5f, 0.0f, -0.48f),
+        glm::vec3( 1.5f, 0.0f, 0.51f),
+        glm::vec3( 0.0f, 0.0f, 0.7f),
+        glm::vec3(-0.3f, 0.0f, -2.3f),
+        glm::vec3( 0.5f, 0.0f, -0.6f)
+    };
+
     // shader configuration
     // --------------------
     shader.use();
@@ -213,6 +223,12 @@ int main()
         // input
         // -----
         processInput(window);
+
+        std::map<float, glm::vec3> sorted;
+        for(unsigned int i = 0; i < windows.size(); ++i) {
+            float distance = glm::length(camera.Position - windows[i]);
+            sorted[distance] = windows[i];
+        }
 
         // render
         // ------
@@ -243,10 +259,19 @@ int main()
         shader.setMat4("model", model);
         glDrawArrays(GL_TRIANGLES, 0, 6);
         // grass
+        // glBindVertexArray(grassVAO);
+        // glBindTexture(GL_TEXTURE_2D, grassTexture);
+        // for (unsigned int i = 0; i < vegetation.size(); ++i) {
+        //     model = glm::translate(model, vegetation[i]);
+        //     shader.setMat4("model", model);
+        //     glDrawArrays(GL_TRIANGLES, 0, 6);
+        //     model = glm::mat4();
+        // }
+        //window
         glBindVertexArray(grassVAO);
-        glBindTexture(GL_TEXTURE_2D, grassTexture);
-        for (unsigned int i = 0; i < vegetation.size(); ++i) {
-            model = glm::translate(model, vegetation[i]);
+        glBindTexture(GL_TEXTURE_2D, windowTexture);
+        for (std::map<float, glm::vec3>::reverse_iterator it = sorted.rbegin(); it != sorted.rend(); ++it) {
+            model = glm::translate(model, it->second);
             shader.setMat4("model", model);
             glDrawArrays(GL_TRIANGLES, 0, 6);
             model = glm::mat4();
