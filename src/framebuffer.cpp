@@ -76,7 +76,7 @@ int main()
     // build and compile shaders
     // -------------------------
     Shader shader("../src/depthTest.vs", "../src/depthTest.fs");
-    Shader screenShader("../src/screenShader.vs", "../src/depthTest.fs");
+    Shader screenShader("../src/screenShader.vs", "../src/screenShader.fs");
 
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
