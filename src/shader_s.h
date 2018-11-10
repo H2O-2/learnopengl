@@ -17,7 +17,7 @@ class Shader {
 public:
     unsigned int shaderProgram;
 
-    Shader(const GLchar* vertexPath, const GLchar* fragmentPath);
+    Shader(const GLchar* vertexPath, const GLchar* fragmentPath, const GLchar* geometryPath = nullptr);
     void use();
     void setBool(const string &name, bool value) const;
     void setInt(const string &name, int value) const;
