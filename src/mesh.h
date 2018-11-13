@@ -33,6 +33,7 @@ public:
 
     Mesh(vector<Vertex> vertices, vector<unsigned int> indices, vector<Texture> texture);
     void Draw(Shader shader);
+    unsigned int getVAO();
 private:
     unsigned VAO, VBO, EBO;
     const string DIFFUSE = "texture_diffuse";

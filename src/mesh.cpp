@@ -39,6 +39,10 @@ void Mesh::Draw(Shader shader) {
     glBindVertexArray(0);
 }
 
+unsigned int Mesh::getVAO() {
+    return VAO;
+}
+
 void Mesh::setupMesh() {
     glGenBuffers(1, &VBO);
     glGenBuffers(1, &EBO);

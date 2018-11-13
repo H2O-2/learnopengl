@@ -15,6 +15,15 @@ void Model::Draw(Shader shader) {
     }
 }
 
+Mesh Model::getMesh(unsigned int &index) {
+    // std::cout << meshes.size() << '\n';
+    return meshes.at(index);
+}
+
+unsigned int Model::meshSize() {
+    return meshes.size();
+}
+
 void Model::loadModel(string path) {
     Assimp::Importer importer;
     const aiScene *scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);

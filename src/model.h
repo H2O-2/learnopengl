@@ -23,6 +23,8 @@ class Model {
 public:
     Model(char const *path);
     void Draw(Shader shader);
+    Mesh getMesh(unsigned int &index);
+    unsigned int meshSize();
 private:
     vector<Mesh> meshes;
     vector<Texture> textures_loaded;

@@ -36,6 +36,21 @@ int main() {
 
     Shader shader("../src/instancing.vs", "../src/instancing.fs");
 
+    glm::vec2 offsets[100];
+    int index = 0;
+    float offset = 0.1f;
+    for (int i = -10; i < 10; i += 2) {
+        for (int j = -10; j < 10; j += 2) {
+            offsets[index++] = glm::vec2((float)i / 10.0f + offset, (float)j / 10.0f + offset);
+        }
+    }
+
+    unsigned int instanceVBO;
+    glGenBuffers(1, &instanceVBO);
+    glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec2) * 100, offsets, GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
     float quadVertices[] = {
     // positions     // colors
     -0.05f,  0.05f,  1.0f, 0.0f, 0.0f,
@@ -57,16 +72,13 @@ int main() {
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-    glBindVertexArray(0);
 
-    glm::vec2 offsets[100];
-    int index = 0;
-    float offset = 0.1f;
-    for (int i = -10; i < 10; i += 2) {
-        for (int j = -10; j < 10; j += 2) {
-            offsets[index++] = glm::vec2((float)i / 10.0f + offset, (float)j / 10.0f + offset);
-        }
-    }
+    glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
+    glEnableVertexAttribArray(2);
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
+    glVertexAttribDivisor(2, 1);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
 
     shader.use();
 
