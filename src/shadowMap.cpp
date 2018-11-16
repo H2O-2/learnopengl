@@ -17,6 +17,9 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void processInput(GLFWwindow *window);
 unsigned int loadTexture(const char *path);
+void renderScene(const Shader &shader);
+void renderCube();
+void renderDepth();
 
 // settings
 const unsigned int SCR_WIDTH = 1280;
@@ -31,6 +34,8 @@ bool firstMouse = true;
 // timing
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
+
+unsigned int floorVAO, cubeVAO, cubeVBO, debugVAO, debugVBO;
 
 int main() {
     glfwInit();
@@ -59,7 +64,9 @@ int main() {
 
     glEnable(GL_DEPTH_TEST);
 
-    Shader shader("../src/advancedLighting.vs", "../src/advancedLighting.fs");
+    // Shader shader("../src/depthCube.vs", "../src/depthCube.fs");
+    Shader depthShader("../src/depthShader.vs", "../src/depthShader.fs");
+    Shader debugDepthShader("../src/debugDepth.vs", "../src/debugDepth.fs");
 
     float planeVertices[] = {
         // positions            // normals         // texcoords
@@ -71,11 +78,11 @@ int main() {
         -25.0f, -0.5f, -25.0f,  0.0f, 1.0f, 0.0f,   0.0f, 25.0f,
          25.0f, -0.5f, -25.0f,  0.0f, 1.0f, 0.0f,  25.0f, 25.0f
     };
-    unsigned int VAO, VBO;
-    glGenBuffers(1, &VBO);
-    glGenVertexArrays(1, &VAO);
-    glBindVertexArray(VAO);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    unsigned int floorVBO;
+    glGenBuffers(1, &floorVBO);
+    glGenVertexArrays(1, &floorVAO);
+    glBindVertexArray(floorVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, floorVBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(planeVertices), planeVertices, GL_STATIC_DRAW);
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
@@ -83,6 +90,84 @@ int main() {
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(2);
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+
+    float vertices[] = {
+        // back face
+        -1.0f, -1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 0.0f, 0.0f, // bottom-left
+        1.0f,  1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 1.0f, 1.0f, // top-right
+        1.0f, -1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 1.0f, 0.0f, // bottom-right
+        1.0f,  1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 1.0f, 1.0f, // top-right
+        -1.0f, -1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 0.0f, 0.0f, // bottom-left
+        -1.0f,  1.0f, -1.0f,  0.0f,  0.0f, -1.0f, 0.0f, 1.0f, // top-left
+        // front face
+        -1.0f, -1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f, 0.0f, // bottom-left
+        1.0f, -1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f, 0.0f, // bottom-right
+        1.0f,  1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f, 1.0f, // top-right
+        1.0f,  1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 1.0f, 1.0f, // top-right
+        -1.0f,  1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f, 1.0f, // top-left
+        -1.0f, -1.0f,  1.0f,  0.0f,  0.0f,  1.0f, 0.0f, 0.0f, // bottom-left
+        // left face
+        -1.0f,  1.0f,  1.0f, -1.0f,  0.0f,  0.0f, 1.0f, 0.0f, // top-right
+        -1.0f,  1.0f, -1.0f, -1.0f,  0.0f,  0.0f, 1.0f, 1.0f, // top-left
+        -1.0f, -1.0f, -1.0f, -1.0f,  0.0f,  0.0f, 0.0f, 1.0f, // bottom-left
+        -1.0f, -1.0f, -1.0f, -1.0f,  0.0f,  0.0f, 0.0f, 1.0f, // bottom-left
+        -1.0f, -1.0f,  1.0f, -1.0f,  0.0f,  0.0f, 0.0f, 0.0f, // bottom-right
+        -1.0f,  1.0f,  1.0f, -1.0f,  0.0f,  0.0f, 1.0f, 0.0f, // top-right
+        // right face
+        1.0f,  1.0f,  1.0f,  1.0f,  0.0f,  0.0f, 1.0f, 0.0f, // top-left
+        1.0f, -1.0f, -1.0f,  1.0f,  0.0f,  0.0f, 0.0f, 1.0f, // bottom-right
+        1.0f,  1.0f, -1.0f,  1.0f,  0.0f,  0.0f, 1.0f, 1.0f, // top-right
+        1.0f, -1.0f, -1.0f,  1.0f,  0.0f,  0.0f, 0.0f, 1.0f, // bottom-right
+        1.0f,  1.0f,  1.0f,  1.0f,  0.0f,  0.0f, 1.0f, 0.0f, // top-left
+        1.0f, -1.0f,  1.0f,  1.0f,  0.0f,  0.0f, 0.0f, 0.0f, // bottom-left
+        // bottom face
+        -1.0f, -1.0f, -1.0f,  0.0f, -1.0f,  0.0f, 0.0f, 1.0f, // top-right
+        1.0f, -1.0f, -1.0f,  0.0f, -1.0f,  0.0f, 1.0f, 1.0f, // top-left
+        1.0f, -1.0f,  1.0f,  0.0f, -1.0f,  0.0f, 1.0f, 0.0f, // bottom-left
+        1.0f, -1.0f,  1.0f,  0.0f, -1.0f,  0.0f, 1.0f, 0.0f, // bottom-left
+        -1.0f, -1.0f,  1.0f,  0.0f, -1.0f,  0.0f, 0.0f, 0.0f, // bottom-right
+        -1.0f, -1.0f, -1.0f,  0.0f, -1.0f,  0.0f, 0.0f, 1.0f, // top-right
+        // top face
+        -1.0f,  1.0f, -1.0f,  0.0f,  1.0f,  0.0f, 0.0f, 1.0f, // top-left
+        1.0f,  1.0f , 1.0f,  0.0f,  1.0f,  0.0f, 1.0f, 0.0f, // bottom-right
+        1.0f,  1.0f, -1.0f,  0.0f,  1.0f,  0.0f, 1.0f, 1.0f, // top-right
+        1.0f,  1.0f,  1.0f,  0.0f,  1.0f,  0.0f, 1.0f, 0.0f, // bottom-right
+        -1.0f,  1.0f, -1.0f,  0.0f,  1.0f,  0.0f, 0.0f, 1.0f, // top-left
+        -1.0f,  1.0f,  1.0f,  0.0f,  1.0f,  0.0f, 0.0f, 0.0f  // bottom-left
+    };
+    glGenBuffers(1, &cubeVBO);
+    glGenVertexArrays(1, &cubeVAO);
+    glBindVertexArray(cubeVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(2);
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+
+    float quadVertices[] = {
+        // positions        // texture Coords
+        -1.0f,  1.0f, 0.0f, 0.0f, 1.0f,
+        -1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
+        1.0f,  1.0f, 0.0f, 1.0f, 1.0f,
+        1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
+    };
+    glGenBuffers(1, &debugVBO);
+    glGenVertexArrays(1, &debugVAO);
+    glBindVertexArray(debugVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, debugVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), quadVertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 
     unsigned int woodTexture = loadTexture(FileSystem::getPath("src/wood.png").c_str());
@@ -100,15 +185,17 @@ int main() {
     unsigned int depthMapFBO;
     glGenFramebuffers(1, &depthMapFBO);
     glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
-    glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depthMap, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
     glDrawBuffer(GL_NONE);
     glReadBuffer(GL_NONE);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-    glm::vec3 lightPos(0.0f, 0.0f, 0.0f);
+    glm::vec3 lightPos(-2.0f, 4.0f, -1.0f);
 
-    shader.use();
-    shader.setInt("woodTexture", 0);
+    // shader.use();
+    // shader.setInt("woodTexture", 0);
+    debugDepthShader.use();
+    debugDepthShader.setInt("depthMap", 0);
 
     while (!glfwWindowShouldClose(window)) {
         float currentFrame = glfwGetTime();
@@ -120,33 +207,95 @@ int main() {
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+        // first pass: generate depth map from the light's perspective
+        float near = 1.0f, far = 7.5f;
+        glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near, far);
+        glm::mat4 lightView = glm::lookAt(lightPos, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        glm::mat4 lightMat = lightProjection * lightView;
+
+        depthShader.use();
+        depthShader.setMat4("lightMat", lightMat);
+
         glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
         glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
         glClear(GL_DEPTH_BUFFER_BIT);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, woodTexture);
-
-        // render
-
+        renderScene(depthShader);
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
+        // second pass: render scene using the depth map
         glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        // shader.use();
+        // glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+        // glm::mat4 view = camera.GetViewMatrix();
+        // shader.setMat4("projection", projection);
+        // shader.setMat4("view", view);
+        // glActiveTexture(GL_TEXTURE0);
+        // glBindTexture(GL_TEXTURE_2D, woodTexture);
+        // glActiveTexture(GL_TEXTURE1);
+        // glBindTexture(GL_TEXTURE_2D, depthMap);
+        // renderScene(shader);
+
+        debugDepthShader.use();
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, woodTexture);
-        glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, depthMap);
+        renderDepth();
 
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
 
-    glDeleteBuffers(1, &VBO);
-    glDeleteVertexArrays(1, &VAO);
+    glDeleteBuffers(1, &floorVBO);
+    glDeleteVertexArrays(1, &floorVAO);
+    glDeleteBuffers(1, &cubeVBO);
+    glDeleteVertexArrays(1, &cubeVAO);
+    glDeleteBuffers(1, &debugVBO);
+    glDeleteVertexArrays(1, &debugVAO);
 
     glfwTerminate();
 
     return 0;
+}
+
+void renderScene(const Shader &shader) {
+    // floor
+    glm::mat4 model;
+    shader.setMat4("model", model);
+    glBindVertexArray(floorVAO);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+    glBindVertexArray(0);
+
+    // cubes
+    model = glm::mat4();
+    model = glm::translate(model, glm::vec3(0.0f, 1.5f, 0.0f));
+    model = glm::scale(model, glm::vec3(0.5f));
+    shader.setMat4("model", model);
+    renderCube();
+    model = glm::mat4();
+    model = glm::translate(model, glm::vec3(2.0f, 0.0f, 1.0f));
+    model = glm::scale(model, glm::vec3(0.5f));
+    shader.setMat4("model", model);
+    renderCube();
+    model = glm::mat4();
+    model = glm::translate(model, glm::vec3(-1.0f, 0.0f, 2.0f));
+    model = glm::rotate(model, glm::radians(60.0f), glm::normalize(glm::vec3(1.0, 0.0, 1.0)));
+    model = glm::scale(model, glm::vec3(0.25f));
+    shader.setMat4("model", model);
+    renderCube();
+}
+
+void renderCube() {
+    glBindVertexArray(cubeVAO);
+    glDrawArrays(GL_TRIANGLES, 0, 36);
+    glBindVertexArray(0);
+}
+
+void renderDepth() {
+    glBindVertexArray(debugVAO);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    glBindVertexArray(0);
 }
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
