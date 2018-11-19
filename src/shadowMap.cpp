@@ -64,7 +64,7 @@ int main() {
 
     glEnable(GL_DEPTH_TEST);
 
-    // Shader shader("../src/depthCube.vs", "../src/depthCube.fs");
+    Shader shader("../src/depthCube.vs", "../src/depthCube.fs");
     Shader depthShader("../src/depthShader.vs", "../src/depthShader.fs");
     Shader debugDepthShader("../src/debugDepth.vs", "../src/debugDepth.fs");
 
@@ -177,8 +177,10 @@ int main() {
     glGenTextures(1, &depthMap);
     glBindTexture(GL_TEXTURE_2D, depthMap);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+    float borderColor[] = {1.0f, 1.0f, 1.0f, 1.0f};
+    glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
@@ -192,8 +194,9 @@ int main() {
 
     glm::vec3 lightPos(-2.0f, 4.0f, -1.0f);
 
-    // shader.use();
-    // shader.setInt("woodTexture", 0);
+    shader.use();
+    shader.setInt("diffuseTexture", 0);
+    shader.setInt("shadowMap", 1);
     debugDepthShader.use();
     debugDepthShader.setInt("depthMap", 0);
 
@@ -225,23 +228,26 @@ int main() {
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
         // second pass: render scene using the depth map
-        glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
+        glViewport(0, 0, 2 * SCR_WIDTH, 2 * SCR_HEIGHT);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        // shader.use();
-        // glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
-        // glm::mat4 view = camera.GetViewMatrix();
-        // shader.setMat4("projection", projection);
-        // shader.setMat4("view", view);
-        // glActiveTexture(GL_TEXTURE0);
-        // glBindTexture(GL_TEXTURE_2D, woodTexture);
-        // glActiveTexture(GL_TEXTURE1);
-        // glBindTexture(GL_TEXTURE_2D, depthMap);
-        // renderScene(shader);
+        shader.use();
+        glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+        glm::mat4 view = camera.GetViewMatrix();
+        shader.setMat4("projection", projection);
+        shader.setMat4("view", view);
+        shader.setMat4("lightMat", lightMat);
+        shader.setVec3("lightPos", lightPos);
+        shader.setVec3("viewPos", camera.Position);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, woodTexture);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, depthMap);
+        renderScene(shader);
 
         debugDepthShader.use();
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, depthMap);
-        renderDepth();
+        // renderDepth();
 
         glfwSwapBuffers(window);
         glfwPollEvents();
