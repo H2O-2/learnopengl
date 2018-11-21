@@ -20,7 +20,7 @@ float ShadowCalculation(vec3 fragPos) {
     vec3 fragToLight = fragPos - lightPos;
     float closestDepth = texture(shadowMap, fragToLight).r;
     closestDepth *= far_plane;
-    vec3 currentDepth = length(fragToLight);
+    float currentDepth = length(fragToLight);
     float bias = 0.05;
     float shadow = currentDepth - bias > closestDepth ? 1.0 : 0.0;
 
@@ -45,8 +45,8 @@ void main() {
     vec3 specular = spec * lightColor;
 
     // shadow
-    float shadow = ShadowCalculation(fs_in.FragPosLightSpace, lightDir, normal);
-    vec3 lighting = (ambient + (1 - shadow) * (diffuse + specular)) * color;
+    float shadow = ShadowCalculation(fs_in.FragPos);
+    vec3 lighting = (ambient + (1.0 - shadow) * (diffuse + specular)) * color;
 
     FragColor = vec4(lighting, 1.0);
 }
