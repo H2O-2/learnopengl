@@ -3,7 +3,6 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
-#define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
 #include <glm/glm.hpp>
@@ -61,20 +60,18 @@ int main() {
     }
 
     glEnable(GL_DEPTH_TEST);
-    // glEnable(GL_BLEND);
-    // glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    Shader shader("../src/advancedLighting.vs", "../src/advancedLighting.fs");
+    Shader shader("../src/normalMapping.vs", "../src/normalMapping.fs");
 
     float planeVertices[] = {
         // positions            // normals         // texcoords
-         10.0f, -0.5f,  10.0f,  0.0f, 1.0f, 0.0f,  10.0f,  0.0f,
-        -10.0f, -0.5f,  10.0f,  0.0f, 1.0f, 0.0f,   0.0f,  0.0f,
-        -10.0f, -0.5f, -10.0f,  0.0f, 1.0f, 0.0f,   0.0f, 10.0f,
+         1.0f,  1.0f,  0.0f,  0.0f, 0.0f, 1.0f,  1.0f,  0.0f,
+        -1.0f,  1.0f,  0.0f,  0.0f, 0.0f, 1.0f,   0.0f,  0.0f,
+        -1.0f, -1.0f,  0.0f,  0.0f, 0.0f, 1.0f,   0.0f, 1.0f,
 
-         10.0f, -0.5f,  10.0f,  0.0f, 1.0f, 0.0f,  10.0f,  0.0f,
-        -10.0f, -0.5f, -10.0f,  0.0f, 1.0f, 0.0f,   0.0f, 10.0f,
-         10.0f, -0.5f, -10.0f,  0.0f, 1.0f, 0.0f,  10.0f, 10.0f
+         1.0f,  1.0f,  0.0f,  0.0f, 0.0f, 1.0f,  1.0f,  0.0f,
+        -1.0f, -1.0f,  0.0f,  0.0f, 0.0f, 1.0f,   0.0f, 1.0f,
+         1.0f, -1.0f,  0.0f,  0.0f, 0.0f, 1.0f,  1.0f, 1.0f
     };
     unsigned int VAO, VBO;
     glGenBuffers(1, &VBO);
@@ -90,12 +87,14 @@ int main() {
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
     glBindVertexArray(0);
 
-    unsigned int floorTexture = loadTexture(FileSystem::getPath("src/wood.png").c_str());
+    unsigned int floorTexture = loadTexture(FileSystem::getPath("src/brickwall.jpg").c_str());
+    unsigned int normalMap = loadTexture(FileSystem::getPath("src/brickwall_normal.jpg").c_str());
 
-    glm::vec3 lightPos(0.0f, 0.0f, 0.0f);
+    glm::vec3 lightPos(0.0f, 0.0f, 0.5f);
 
     shader.use();
     shader.setInt("floorTexture", 0);
+    shader.setInt("normalMap", 1);
 
     while (!glfwWindowShouldClose(window)) {
         float currentFrame = glfwGetTime();
@@ -121,7 +120,7 @@ int main() {
         glDrawArrays(GL_TRIANGLES, 0, 6);
         glBindVertexArray(0);
 
-        std::cout << (blinn ? "Blinn-Phong" : "Phong") << std::endl;
+        // std::cout << (blinn ? "Blinn-Phong" : "Phong") << std::endl;
 
         glfwSwapBuffers(window);
         glfwPollEvents();
