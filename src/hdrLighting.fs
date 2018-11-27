@@ -20,6 +20,8 @@ uniform sampler2D diffuseTexture;
 void main() {
     vec3 color = texture(diffuseTexture, fs_in.TexCoords).rgb;
 
+    vec3 ambient = 0.0 * color;
+
     vec3 lighting = vec3(0.0);
     for (int i = 0; i < 16; ++i) {
         vec3 lightDir = normalize(lights[i].Position - fs_in.FragPos);
@@ -31,5 +33,5 @@ void main() {
         lighting += diffuse;
     }
 
-    FragPos = vec4(lighting, 1.0);
+    FragPos = vec4(ambient + lighting, 1.0);
 }
