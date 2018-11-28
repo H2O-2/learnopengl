@@ -65,6 +65,7 @@ int main() {
 
     Shader shader("../src/bloom.vs", "../src/bloom.fs");
     Shader lightShader("../src/lamp.vs", "../src/bloomLamp.fs");
+    Shader screenShader("../src/bloomScreenShader.vs", "../src/bloomScreenShader.fs");
 
     float vertices[] = {
         // back face
@@ -146,6 +147,32 @@ int main() {
     unsigned int woodTexture = loadTexture(FileSystem::getPath("src/wood.png").c_str());
     unsigned int containerTexture = loadTexture(FileSystem::getPath("src/container2.png").c_str());
 
+    unsigned int colorFBO;
+    glGenFramebuffers(1, &colorFBO);
+    glBindFramebuffer(GL_FRAMEBUFFER, colorFBO);
+    unsigned int colorBuffer[2];
+    glGenTextures(2, colorBuffer);
+    for (int i = 0; i < 2; ++i) {
+        glBindTexture(GL_TEXTURE_2D, colorBuffer[i]);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGB, GL_FLOAT, NULL);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, colorBuffer[i], 0);
+    }
+    unsigned int depthRBO;
+    glGenRenderbuffers(1, &depthRBO);
+    glBindRenderbuffer(GL_RENDERBUFFER, depthRBO);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, SCR_WIDTH, SCR_HEIGHT);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthRBO);
+    glDrawBuffers(2, (const GLenum[]){GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1});
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+        std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << '\n';
+        std::cout << "ERROR::FRAMEBUFFER:: " << glCheckFramebufferStatus(GL_FRAMEBUFFER) << std::endl;
+    }
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
     // positions
     std::vector<glm::vec3> lightPositions;
     lightPositions.push_back(glm::vec3( 0.0f, 0.5f,  1.5f));
@@ -165,6 +192,7 @@ int main() {
         shader.setVec3("lights[" + std::to_string(i) + "].Position", lightPositions[i]);
         shader.setVec3("lights[" + std::to_string(i) + "].Color", lightColors[i]);
     }
+    screenShader.setInt("scene", 0);
 
     while (!glfwWindowShouldClose(window)) {
         float currentFrame = glfwGetTime();
@@ -176,6 +204,8 @@ int main() {
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+        glBindFramebuffer(GL_FRAMEBUFFER, colorFBO);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (GLfloat)SCR_WIDTH / (GLfloat)SCR_HEIGHT, 0.1f, 100.0f);
         glm::mat4 view = camera.GetViewMatrix();
         glm::mat4 model;
@@ -242,6 +272,14 @@ int main() {
             lightShader.setVec3("lightColor", lightColors[i]);
             renderCube();
         }
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        screenShader.use();
+        glActiveTexture(GL_TEXTURE0);
+        // glBindTexture(GL_TEXTURE_2D, colorBuffer[0]);
+        glBindTexture(GL_TEXTURE_2D, colorBuffer[1]);
+        renderQuad();
 
         glfwSwapBuffers(window);
         glfwPollEvents();
