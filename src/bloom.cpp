@@ -25,10 +25,13 @@ const unsigned int SCR_WIDTH = 1280;
 const unsigned int SCR_HEIGHT = 720;
 
 // camera
-Camera camera(glm::vec3(0.0f, 0.0f, 5.0f));
+Camera camera(glm::vec3(0.0f, 2.0f, 8.0f));
 float lastX = (float)SCR_WIDTH / 2.0;
 float lastY = (float)SCR_HEIGHT / 2.0;
 bool firstMouse = true;
+bool bloom = true;
+bool bloomKeyPressed = false;
+float exposure = 1.0f;
 
 // timing
 float deltaTime = 0.0f;
@@ -65,6 +68,7 @@ int main() {
 
     Shader shader("../src/bloom.vs", "../src/bloom.fs");
     Shader lightShader("../src/lamp.vs", "../src/bloomLamp.fs");
+    Shader blurShader("../src/bloomScreenShader.vs", "../src/blur.fs");
     Shader screenShader("../src/bloomScreenShader.vs", "../src/bloomScreenShader.fs");
 
     float vertices[] = {
@@ -171,6 +175,25 @@ int main() {
         std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << '\n';
         std::cout << "ERROR::FRAMEBUFFER:: " << glCheckFramebufferStatus(GL_FRAMEBUFFER) << std::endl;
     }
+
+    unsigned int pingpongFBO[2];
+    unsigned int pingpongColorBuffer[2];
+    glGenFramebuffers(2, pingpongFBO);
+    glGenTextures(2, pingpongColorBuffer);
+    for (int j = 0; j < 2; ++j) {
+        glBindFramebuffer(GL_FRAMEBUFFER, pingpongFBO[j]);
+        glBindTexture(GL_TEXTURE_2D, pingpongColorBuffer[j]);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGB, GL_FLOAT, NULL);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, pingpongColorBuffer[j], 0);
+        if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+            std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << '\n';
+            std::cout << "ERROR::FRAMEBUFFER:: " << glCheckFramebufferStatus(GL_FRAMEBUFFER) << std::endl;
+        }
+    }
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     // positions
@@ -192,6 +215,9 @@ int main() {
         shader.setVec3("lights[" + std::to_string(i) + "].Position", lightPositions[i]);
         shader.setVec3("lights[" + std::to_string(i) + "].Color", lightColors[i]);
     }
+    blurShader.use();
+    blurShader.setInt("image", 0);
+    screenShader.use();
     screenShader.setInt("scene", 0);
 
     while (!glfwWindowShouldClose(window)) {
@@ -272,13 +298,39 @@ int main() {
             lightShader.setVec3("lightColor", lightColors[i]);
             renderCube();
         }
+
+        bool horizontal = true, firstIter = true;
+        const int amount = 2;
+        for (int j = 0; j < amount; ++j) {
+            glBindFramebuffer(GL_FRAMEBUFFER, pingpongFBO[horizontal]);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            blurShader.use();
+            blurShader.setBool("horizontal", horizontal);
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, firstIter ? colorBuffer[1] : pingpongColorBuffer[!horizontal]);
+            renderQuad();
+            horizontal = !horizontal;
+            if (firstIter) firstIter = false;
+        }
+        // glBindFramebuffer(GL_FRAMEBUFFER, pingpongFBO[0]);
+        // glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        // blurShader.use();
+        // blurShader.setBool("horizontal", false);
+        // glActiveTexture(GL_TEXTURE0);
+        // glBindTexture(GL_TEXTURE_2D, colorBuffer[1]);
+        // renderQuad();
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         screenShader.use();
+        screenShader.setInt("bloom", bloom);
+        screenShader.setFloat("exposure", exposure);
         glActiveTexture(GL_TEXTURE0);
-        // glBindTexture(GL_TEXTURE_2D, colorBuffer[0]);
         glBindTexture(GL_TEXTURE_2D, colorBuffer[1]);
+        glActiveTexture(GL_TEXTURE1);
+        // glBindTexture(GL_TEXTURE_2D, colorBuffer[0]);
+        // glBindTexture(GL_TEXTURE_2D, colorBuffer[1]);
+        glBindTexture(GL_TEXTURE_2D, pingpongColorBuffer[!horizontal]);
         renderQuad();
 
         glfwSwapBuffers(window);
