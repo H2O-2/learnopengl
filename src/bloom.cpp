@@ -25,7 +25,7 @@ const unsigned int SCR_WIDTH = 1280;
 const unsigned int SCR_HEIGHT = 720;
 
 // camera
-Camera camera(glm::vec3(0.0f, 2.0f, 8.0f));
+Camera camera(glm::vec3(0.0f, 0.0f, 5.0f));
 float lastX = (float)SCR_WIDTH / 2.0;
 float lastY = (float)SCR_HEIGHT / 2.0;
 bool firstMouse = true;
@@ -70,6 +70,7 @@ int main() {
     Shader lightShader("../src/lamp.vs", "../src/bloomLamp.fs");
     Shader blurShader("../src/bloomScreenShader.vs", "../src/blur.fs");
     Shader screenShader("../src/bloomScreenShader.vs", "../src/bloomScreenShader.fs");
+    Shader simpleScreenShader("../src/bloomScreenShader.vs", "../src/simpleScreenShader.fs");
 
     float vertices[] = {
         // back face
@@ -158,7 +159,7 @@ int main() {
     glGenTextures(2, colorBuffer);
     for (int i = 0; i < 2; ++i) {
         glBindTexture(GL_TEXTURE_2D, colorBuffer[i]);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGB, GL_FLOAT, NULL);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, 2 * SCR_WIDTH, 2 * SCR_HEIGHT, 0, GL_RGB, GL_FLOAT, NULL);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -168,7 +169,7 @@ int main() {
     unsigned int depthRBO;
     glGenRenderbuffers(1, &depthRBO);
     glBindRenderbuffer(GL_RENDERBUFFER, depthRBO);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, SCR_WIDTH, SCR_HEIGHT);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, 2 * SCR_WIDTH, 2 * SCR_HEIGHT);
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthRBO);
     glDrawBuffers(2, (const GLenum[]){GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1});
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
@@ -183,7 +184,7 @@ int main() {
     for (int j = 0; j < 2; ++j) {
         glBindFramebuffer(GL_FRAMEBUFFER, pingpongFBO[j]);
         glBindTexture(GL_TEXTURE_2D, pingpongColorBuffer[j]);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGB, GL_FLOAT, NULL);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, 2 * SCR_WIDTH, 2 * SCR_HEIGHT, 0, GL_RGB, GL_FLOAT, NULL);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -219,6 +220,9 @@ int main() {
     blurShader.setInt("image", 0);
     screenShader.use();
     screenShader.setInt("scene", 0);
+    screenShader.setInt("bloomBlur", 1);
+    simpleScreenShader.use();
+    simpleScreenShader.setInt("scene", 0);
 
     while (!glfwWindowShouldClose(window)) {
         float currentFrame = glfwGetTime();
@@ -227,10 +231,11 @@ int main() {
 
         processInput(window);
 
-        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         glBindFramebuffer(GL_FRAMEBUFFER, colorFBO);
+        glEnable(GL_DEPTH_TEST);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (GLfloat)SCR_WIDTH / (GLfloat)SCR_HEIGHT, 0.1f, 100.0f);
         glm::mat4 view = camera.GetViewMatrix();
@@ -300,11 +305,12 @@ int main() {
         }
 
         bool horizontal = true, firstIter = true;
-        const int amount = 2;
+        const int amount = 50;
+        glDisable(GL_DEPTH_TEST);
+        blurShader.use();
         for (int j = 0; j < amount; ++j) {
+            // std::cout << "in" << '\n';
             glBindFramebuffer(GL_FRAMEBUFFER, pingpongFBO[horizontal]);
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            blurShader.use();
             blurShader.setBool("horizontal", horizontal);
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, firstIter ? colorBuffer[1] : pingpongColorBuffer[!horizontal]);
@@ -326,12 +332,19 @@ int main() {
         screenShader.setInt("bloom", bloom);
         screenShader.setFloat("exposure", exposure);
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, colorBuffer[1]);
+        glBindTexture(GL_TEXTURE_2D, colorBuffer[0]);
         glActiveTexture(GL_TEXTURE1);
-        // glBindTexture(GL_TEXTURE_2D, colorBuffer[0]);
-        // glBindTexture(GL_TEXTURE_2D, colorBuffer[1]);
         glBindTexture(GL_TEXTURE_2D, pingpongColorBuffer[!horizontal]);
         renderQuad();
+
+        // glClear(GL_COLOR_BUFFER_BIT);
+        // simpleScreenShader.use();
+        // glActiveTexture(GL_TEXTURE0);
+        // // glBindTexture(GL_TEXTURE0, pingpongColorBuffer[!horizontal]);
+        // glBindTexture(GL_TEXTURE_2D, colorBuffer[0]);
+        // renderQuad();
+
+        // std::cout << "bloom: " << (bloom ? "on" : "off") << "| exposure: " << exposure << std::endl;
 
         glfwSwapBuffers(window);
         glfwPollEvents();
@@ -390,6 +403,24 @@ void processInput(GLFWwindow *window) {
         camera.ProcessKeyboard(LEFT, deltaTime);
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
         camera.ProcessKeyboard(RIGHT, deltaTime);
+
+    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS && !bloomKeyPressed) {
+        bloom = !bloom;
+        bloomKeyPressed = true;
+    }
+    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_RELEASE) {
+        bloomKeyPressed = false;
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) {
+        if (exposure > 0.0f)
+            exposure -= 0.001f;
+        else
+            exposure = 0.0f;
+    }
+    else if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) {
+        exposure += 0.001f;
+    }
 }
 
 unsigned int loadTexture(const char *path) {
