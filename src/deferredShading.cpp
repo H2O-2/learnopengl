@@ -22,9 +22,10 @@ void renderQuad();
 // settings
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
+const int NR_LIGHT = 32;
 
 // camera
-Camera camera(glm::vec3(4.0f, 2.0f, 18.0f));
+Camera camera(glm::vec3(1.0f, 1.0f, 12.0f));
 float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
@@ -77,7 +78,8 @@ int main()
     // build and compile shaders
     // -------------------------
     Shader geometryShader("../src/gBuffer.vs", "../src/gBuffer.fs");
-    Shader simpleScreenShader("../src/bloomScreenShader.vs", "../src/simpleScreenShader.fs");
+    Shader lightingShader("../src/bloomScreenShader.vs", "../src/deferredLighting.fs");
+    Shader lightBoxShader("../src/lamp.vs", "../src/lightBox.fs");
 
     std::vector<glm::vec3> objectPositions;
     objectPositions.push_back(glm::vec3(-3.0,  -3.0, -3.0));
@@ -180,21 +182,21 @@ int main()
 
     glGenTextures(1, &gPosition);
     glBindTexture(GL_TEXTURE_2D, gPosition);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGB, GL_FLOAT, NULL);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, 2 * SCR_WIDTH, 2 * SCR_HEIGHT, 0, GL_RGB, GL_FLOAT, NULL);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gPosition, 0);
 
     glGenTextures(1, &gNormal);
     glBindTexture(GL_TEXTURE_2D, gNormal);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGB, GL_FLOAT, NULL);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, 2 * SCR_WIDTH, 2 * SCR_HEIGHT, 0, GL_RGB, GL_FLOAT, NULL);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, gNormal, 0);
 
     glGenTextures(1, &gAlbedoSpec);
     glBindTexture(GL_TEXTURE_2D, gAlbedoSpec);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 2 * SCR_WIDTH, 2 * SCR_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, gAlbedoSpec, 0);
@@ -204,14 +206,33 @@ int main()
     unsigned int rbo;
     glGenRenderbuffers(1, &rbo);
     glBindRenderbuffer(GL_RENDERBUFFER, rbo);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, SCR_WIDTH, SCR_HEIGHT);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, 2 * SCR_WIDTH, 2 * SCR_HEIGHT);
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rbo);
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
         std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << '\n';
         std::cout << "ERROR::FRAMEBUFFER:: " << glCheckFramebufferStatus(GL_FRAMEBUFFER) << std::endl;
     }
 
-    bool test = false;
+    // lighting
+    std::vector<glm::vec3> lightPositions, lightColors;
+    srand(13);
+    for (int i = 0; i < NR_LIGHT; ++i) {
+        float xPos = ((rand() % 100) / 100.0) * 6.0 - 3.0;
+        float yPos = ((rand() % 100) / 100.0) * 6.0 - 4.0;
+        float zPos = ((rand() % 100) / 100.0) * 6.0 - 3.0;
+        lightPositions.push_back(glm::vec3(xPos, yPos, zPos));
+
+        float red = ((rand() % 100) / 200.0) + 0.5;
+        float green = ((rand() % 100) / 200.0) + 0.5;
+        float blue = ((rand() % 100) / 200.0) + 0.5;
+        lightColors.push_back(glm::vec3(red, green, blue));
+    }
+
+    lightingShader.use();
+    lightingShader.setInt("gPosition", 0);
+    lightingShader.setInt("gNormal", 1);
+    lightingShader.setInt("gAlbedoSpec", 2);
+
     while (!glfwWindowShouldClose(window))
     {
         // per-frame time logic
@@ -223,8 +244,6 @@ int main()
         // input
         // -----
         processInput(window);
-
-        glEnable(GL_DEPTH_TEST);
 
         // render
         // ------
@@ -249,13 +268,48 @@ int main()
         }
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-        glDisable(GL_DEPTH_TEST);
+        // glDisable(GL_DEPTH_TEST);
 
-        glClear(GL_COLOR_BUFFER_BIT);
-        simpleScreenShader.use();
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, gPosition);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, gNormal);
+        glActiveTexture(GL_TEXTURE2);
         glBindTexture(GL_TEXTURE_2D, gAlbedoSpec);
+        lightingShader.use();
+        lightingShader.setVec3("viewPos", camera.Position);
+        for (unsigned int i = 0; i < lightPositions.size(); ++i) {
+            lightingShader.setVec3("lights[" + std::to_string(i) + "].Position", lightPositions[i]);
+            lightingShader.setVec3("lights[" + std::to_string(i) + "].Color", lightColors[i]);
+
+            const float constant = 1.0; // note that we don't send this to the shader, we assume it is always 1.0 (in our case)
+            const float linear = 0.7;
+            const float quadratic = 1.8;
+            lightingShader.setFloat("lights[" + std::to_string(i) + "].linear", linear);
+            lightingShader.setFloat("lights[" + std::to_string(i) + "].quad", quadratic);
+        }
         renderQuad();
+
+        // glEnable(GL_DEPTH_TEST);
+        // copy depth information from G-buffer to default buffer
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, gBuffer);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+        glBlitFramebuffer(0, 0, 2 * SCR_WIDTH, 2 * SCR_HEIGHT, 0, 0, 2 * SCR_WIDTH, 2 * SCR_HEIGHT, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+        // render light box
+        lightBoxShader.use();
+        lightBoxShader.setMat4("projection", projection);
+        lightBoxShader.setMat4("view", view);
+        for (unsigned int j = 0; j < lightPositions.size(); ++j) {
+            glm::mat4 model;
+            model = glm::translate(model, lightPositions[j]);
+            model = glm::scale(model, glm::vec3(0.125f));
+            lightBoxShader.setMat4("model", model);
+            lightBoxShader.setVec3("lightColor", lightColors[j]);
+            renderCube();
+        }
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
