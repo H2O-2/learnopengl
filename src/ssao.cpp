@@ -27,7 +27,7 @@ const unsigned int SCR_HEIGHT = 600;
 const int NR_LIGHT = 32;
 
 // camera
-Camera camera(glm::vec3(1.0f, 1.0f, 12.0f));
+Camera camera(glm::vec3(0.0f, 0.0f, 5.0f));
 float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
@@ -83,7 +83,7 @@ int main()
     // -------------------------
     Shader geometryShader("../src/ssaoGeometry.vs", "../src/ssaoGeometry.fs");
     Shader ssaoShader("../src/bloomScreenShader.vs", "../src/ssao.fs");
-    Shader lightingShader("../src/bloomScreenShader.vs", "../src/deferredLighting.fs");
+    Shader lightingShader("../src/bloomScreenShader.vs", "../src/ssaoLighting.fs");
 
     std::vector<glm::vec3> objectPositions;
     objectPositions.push_back(glm::vec3(-3.0,  -3.0, -3.0));
@@ -258,17 +258,29 @@ int main()
     unsigned int ssaoColorBuffer;
     glGenTextures(1, &ssaoColorBuffer);
     glBindTexture(GL_TEXTURE_2D, ssaoColorBuffer);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGB, GL_FLOAT, NULL);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, 2 * SCR_WIDTH, 2 * SCR_HEIGHT, 0, GL_RGB, GL_FLOAT, NULL);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, ssaoColorBuffer, 0);
 
     // lighting
-
+    glm::vec3 lightPos = glm::vec3(2.0, 4.0, -2.0);
+    glm::vec3 lightColor = glm::vec3(0.2, 0.2, 0.7);
     lightingShader.use();
     lightingShader.setInt("gPosition", 0);
     lightingShader.setInt("gNormal", 1);
     lightingShader.setInt("gAlbedoSpec", 2);
+    lightingShader.setInt("ssao", 3);
+    ssaoShader.use();
+    ssaoShader.setInt("gPosition", 0);
+    ssaoShader.setInt("gNormal", 1);
+    ssaoShader.setInt("texNoise", 2);
+    for (int i = 0; i < SAMPLE_SIZE; ++i) {
+        ssaoShader.setVec3("samples[" + std::to_string(i) + "]", ssaoKernel.at(i));
+    }
+    ssaoShader.setInt("kernelSize", SAMPLE_SIZE);
+    ssaoShader.setFloat("radius", 0.5f);
+    ssaoShader.setFloat("bias", 0.025f);
 
     while (!glfwWindowShouldClose(window))
     {
@@ -291,8 +303,9 @@ int main()
         glm::mat4 view = camera.GetViewMatrix();
         glm::mat4 model;
         model = glm::translate(model, glm::vec3(0.0, 7.0f, 0.0f));
-        model = glm::scale(model, glm::vec3(7.5f, 7.5f, 7.5f));
+        model = glm::scale(model, glm::vec3(15.0f, 15.0f, 15.0f));
 
+        // geometry pass
         glBindFramebuffer(GL_FRAMEBUFFER, gBuffer);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         geometryShader.use();
@@ -303,14 +316,13 @@ int main()
         renderCube();
         geometryShader.setBool("invertNormal", false);
         model = glm::mat4();
-        model = glm::translate(model, glm::vec3(0.0f, 0.0f, 5.0));
-        model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(1.0, 0.0, 0.0));
+        model = glm::translate(model, glm::vec3(0.0f, 0.0f, 5.0f));
+        model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
         model = glm::scale(model, glm::vec3(0.5f));
         geometryShader.setMat4("model", model);
         ourModel.Draw(geometryShader);
 
-        // glDisable(GL_DEPTH_TEST);
-
+        // SSAO pass
         glBindFramebuffer(GL_FRAMEBUFFER, ssaoFBO);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glActiveTexture(GL_TEXTURE0);
@@ -318,17 +330,31 @@ int main()
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, gNormal);
         glActiveTexture(GL_TEXTURE2);
-        glBindTexture(GL_TEXTURE_2D, gAlbedoSpec);
-        lightingShader.use();
-        lightingShader.setVec3("viewPos", camera.Position);
+        glBindTexture(GL_TEXTURE_2D, noiseTexture);
+        ssaoShader.use();
+        ssaoShader.setMat4("projection", projection);
         renderQuad();
 
-        // glEnable(GL_DEPTH_TEST);
-        // copy depth information from G-buffer to default buffer
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, gBuffer);
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-        glBlitFramebuffer(0, 0, 2 * SCR_WIDTH, 2 * SCR_HEIGHT, 0, 0, 2 * SCR_WIDTH, 2 * SCR_HEIGHT, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+        // lighting pass
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, gPosition);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, gNormal);
+        glActiveTexture(GL_TEXTURE2);
+        glBindTexture(GL_TEXTURE_2D, gAlbedoSpec);
+        glActiveTexture(GL_TEXTURE3);
+        glBindTexture(GL_TEXTURE_2D, ssaoColorBuffer);
+        lightingShader.use();
+        lightingShader.setVec3("light.Position", glm::vec3(camera.GetViewMatrix() * glm::vec4(lightPos, 1.0)));
+        lightingShader.setVec3("light.Color", lightColor);
+        const float constant  = 1.0; // note that we don't send this to the shader, we assume it is always 1.0 (in our case)
+        const float linear    = 0.09;
+        const float quadratic = 0.032;
+        lightingShader.setFloat("light.linear", linear);
+        lightingShader.setFloat("light.quad", quadratic);
+        renderQuad();
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
