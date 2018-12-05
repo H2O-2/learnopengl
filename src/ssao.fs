@@ -8,6 +8,7 @@ uniform sampler2D gPosition;
 uniform sampler2D gNormal;
 uniform sampler2D texNoise;
 uniform mat4 projection;
+// uniform mat4 view;
 uniform vec3 samples[64];
 uniform int kernelSize;
 uniform float radius;
@@ -17,8 +18,8 @@ const vec2 noiseScale = vec2(1280.0 / 4.0, 720.0 / 4.0);
 
 void main() {
     vec3 fragPos = texture(gPosition, TexCoords).xyz;
-    vec3 normal = texture(gNormal, TexCoords).xyz;
-    vec3 randomVec = texture(texNoise, TexCoords * noiseScale).xyz;
+    vec3 normal = normalize(texture(gNormal, TexCoords).xyz);
+    vec3 randomVec = normalize(texture(texNoise, TexCoords * noiseScale).xyz);
 
     vec3 tangent = normalize(randomVec - normal * dot(randomVec, normal));
     vec3 bitangent = cross(normal, tangent);
@@ -32,7 +33,7 @@ void main() {
 
         // sample position to screen space
         vec4 offset = projection * vec4(sample, 1.0);
-        offset.xyz /= offset.z;
+        offset.xyz /= offset.w;
         offset.xyz = offset.xyz * 0.5 + 0.5;
 
         float sampleDepth = texture(gPosition, offset.xy).z;

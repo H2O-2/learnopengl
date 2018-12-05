@@ -19,6 +19,8 @@ uniform bool invertNormal;
 void main() {
     vs_out.FragPos = vec3(view * model * vec4(aPos, 1.0));
     vs_out.Normal = normalize(transpose(inverse(mat3(view * model))) * (invertNormal ? -aNormal : aNormal));
+    // vs_out.FragPos = vec3(model * vec4(aPos, 1.0));
+    // vs_out.Normal = normalize(transpose(inverse(mat3(model))) * (invertNormal ? -aNormal : aNormal));
     // vs_out.TexCoords = aTexCoords;
 
     gl_Position = projection * view * model * vec4(aPos, 1.0);

@@ -22,9 +22,8 @@ void renderQuad();
 float lerp(float a, float b, float f);
 
 // settings
-const unsigned int SCR_WIDTH = 800;
-const unsigned int SCR_HEIGHT = 600;
-const int NR_LIGHT = 32;
+const unsigned int SCR_WIDTH = 1280;
+const unsigned int SCR_HEIGHT = 720;
 
 // camera
 Camera camera(glm::vec3(0.0f, 0.0f, 5.0f));
@@ -84,6 +83,10 @@ int main()
     Shader geometryShader("../src/ssaoGeometry.vs", "../src/ssaoGeometry.fs");
     Shader ssaoShader("../src/bloomScreenShader.vs", "../src/ssao.fs");
     Shader lightingShader("../src/bloomScreenShader.vs", "../src/ssaoLighting.fs");
+    Shader blurShader("../src/bloomScreenShader.vs", "../src/ssaoBlur.fs");
+    // Shader geometryShader("../src/9.ssao_geometry.vs", "../src/9.ssao_geometry.fs");
+    // Shader lightingShader("../src/9.ssao.vs", "../src/9.ssao_lighting.fs");
+    // Shader ssaoShader("../src/9.ssao.vs", "../src/9.ssao.fs");
 
     std::vector<glm::vec3> objectPositions;
     objectPositions.push_back(glm::vec3(-3.0,  -3.0, -3.0));
@@ -187,6 +190,7 @@ int main()
     glGenTextures(1, &gPosition);
     glBindTexture(GL_TEXTURE_2D, gPosition);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, 2 * SCR_WIDTH, 2 * SCR_HEIGHT, 0, GL_RGB, GL_FLOAT, NULL);
+    // glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGB, GL_FLOAT, NULL);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -196,13 +200,15 @@ int main()
     glGenTextures(1, &gNormal);
     glBindTexture(GL_TEXTURE_2D, gNormal);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, 2 * SCR_WIDTH, 2 * SCR_HEIGHT, 0, GL_RGB, GL_FLOAT, NULL);
+    // glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGB, GL_FLOAT, NULL);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, gNormal, 0);
 
     glGenTextures(1, &gAlbedoSpec);
     glBindTexture(GL_TEXTURE_2D, gAlbedoSpec);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 2 * SCR_WIDTH, 2 * SCR_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 2 * SCR_WIDTH, 2 * SCR_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+    // glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, gAlbedoSpec, 0);
@@ -213,6 +219,7 @@ int main()
     glGenRenderbuffers(1, &rbo);
     glBindRenderbuffer(GL_RENDERBUFFER, rbo);
     glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, 2 * SCR_WIDTH, 2 * SCR_HEIGHT);
+    // glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, SCR_WIDTH, SCR_HEIGHT);
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rbo);
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
         std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << '\n';
@@ -259,9 +266,30 @@ int main()
     glGenTextures(1, &ssaoColorBuffer);
     glBindTexture(GL_TEXTURE_2D, ssaoColorBuffer);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, 2 * SCR_WIDTH, 2 * SCR_HEIGHT, 0, GL_RGB, GL_FLOAT, NULL);
+    // glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGB, GL_FLOAT, NULL);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, ssaoColorBuffer, 0);
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+        std::cout << "ERROR::FRAMEBUFFER:: SSAO Framebuffer is not complete!" << '\n';
+        std::cout << "ERROR::FRAMEBUFFER:: " << glCheckFramebufferStatus(GL_FRAMEBUFFER) << std::endl;
+    }
+
+    unsigned int ssaoBlurFBO;
+    glGenFramebuffers(1, &ssaoBlurFBO);
+    glBindFramebuffer(GL_FRAMEBUFFER, ssaoBlurFBO);
+
+    unsigned int ssaoBlurBuffer;
+    glGenTextures(1, &ssaoBlurBuffer);
+    glBindTexture(GL_TEXTURE_2D, ssaoBlurBuffer);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, 2 * SCR_WIDTH, 2 * SCR_HEIGHT, 0, GL_RGB, GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, ssaoBlurBuffer, 0);
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+        std::cout << "ERROR::FRAMEBUFFER:: SSAO Framebuffer is not complete!" << '\n';
+        std::cout << "ERROR::FRAMEBUFFER:: " << glCheckFramebufferStatus(GL_FRAMEBUFFER) << std::endl;
+    }
 
     // lighting
     glm::vec3 lightPos = glm::vec3(2.0, 4.0, -2.0);
@@ -269,7 +297,7 @@ int main()
     lightingShader.use();
     lightingShader.setInt("gPosition", 0);
     lightingShader.setInt("gNormal", 1);
-    lightingShader.setInt("gAlbedoSpec", 2);
+    lightingShader.setInt("gAlbedo", 2);
     lightingShader.setInt("ssao", 3);
     ssaoShader.use();
     ssaoShader.setInt("gPosition", 0);
@@ -281,6 +309,8 @@ int main()
     ssaoShader.setInt("kernelSize", SAMPLE_SIZE);
     ssaoShader.setFloat("radius", 0.5f);
     ssaoShader.setFloat("bias", 0.025f);
+    blurShader.use();
+    blurShader.setInt("ssaoInput", 0);
 
     while (!glfwWindowShouldClose(window))
     {
@@ -299,11 +329,12 @@ int main()
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+        glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 50.0f);
         glm::mat4 view = camera.GetViewMatrix();
         glm::mat4 model;
-        model = glm::translate(model, glm::vec3(0.0, 7.0f, 0.0f));
+        model = glm::translate(model, glm::vec3(0.0, 6.5f, 0.0f));
         model = glm::scale(model, glm::vec3(15.0f, 15.0f, 15.0f));
+        // model = glm::scale(model, glm::vec3(7.5f, 7.5f, 7.5f));
 
         // geometry pass
         glBindFramebuffer(GL_FRAMEBUFFER, gBuffer);
@@ -324,7 +355,7 @@ int main()
 
         // SSAO pass
         glBindFramebuffer(GL_FRAMEBUFFER, ssaoFBO);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, gPosition);
         glActiveTexture(GL_TEXTURE1);
@@ -333,6 +364,15 @@ int main()
         glBindTexture(GL_TEXTURE_2D, noiseTexture);
         ssaoShader.use();
         ssaoShader.setMat4("projection", projection);
+        ssaoShader.setMat4("view", view);
+        renderQuad();
+
+        // blur pass
+        glBindFramebuffer(GL_FRAMEBUFFER, ssaoBlurFBO);
+        glClear(GL_COLOR_BUFFER_BIT);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, ssaoColorBuffer);
+        blurShader.use();
         renderQuad();
 
         // lighting pass
@@ -345,7 +385,7 @@ int main()
         glActiveTexture(GL_TEXTURE2);
         glBindTexture(GL_TEXTURE_2D, gAlbedoSpec);
         glActiveTexture(GL_TEXTURE3);
-        glBindTexture(GL_TEXTURE_2D, ssaoColorBuffer);
+        glBindTexture(GL_TEXTURE_2D, ssaoBlurBuffer);
         lightingShader.use();
         lightingShader.setVec3("light.Position", glm::vec3(camera.GetViewMatrix() * glm::vec4(lightPos, 1.0)));
         lightingShader.setVec3("light.Color", lightColor);
