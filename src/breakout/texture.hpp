@@ -4,14 +4,14 @@
 
 class Texture {
 public:
-    Texture(GLuint width, GLuint height, unsigned char *data);
+    GLuint id;
+
+    Texture(GLsizei width, GLsizei height, GLenum format, unsigned char *data, GLenum sWrap = GL_REPEAT, GLenum tWrap = GL_REPEAT, GLenum minFilter = GL_LINEAR, GLenum maxFilter = GL_LINEAR);
     ~Texture();
-    GLuint getTexture();
-    GLuint getWidth();
-    GLuint getHeight();
-    void activeAndBind();
+    GLsizei getWidth();
+    GLsizei getHeight();
+    void activeAndBind(GLenum texture);
 private:
-    GLuint ID;
-    GLuint width;
-    GLuint height;
+    GLsizei width;
+    GLsizei height;
 };

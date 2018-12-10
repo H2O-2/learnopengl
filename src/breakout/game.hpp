@@ -9,7 +9,6 @@ enum GameState {
 };
 
 class Game {
-
 public:
     Game(GLuint width, GLuint height);
     ~Game();
@@ -20,7 +19,7 @@ public:
     void render();
 
     GameState getCurState();
-    GameState setCurState();
+    void setCurState(GameState state);
     GLuint getWidth();
     GLuint getHeight();
 private:
