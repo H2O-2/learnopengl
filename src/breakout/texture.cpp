@@ -1,5 +1,7 @@
 #include "texture.hpp"
 
+Texture::Texture() : id(), width(), height() {}
+
 Texture::Texture(GLsizei width, GLsizei height, GLenum format, unsigned char *data, GLenum sWrap, GLenum tWrap, GLenum minFilter, GLenum maxFilter) : width(width), height(height) {
     glGenTextures(1, &this->id);
     glBindTexture(GL_TEXTURE_2D, this->id);

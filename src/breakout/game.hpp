@@ -22,6 +22,8 @@ public:
     void setCurState(GameState state);
     GLuint getWidth();
     GLuint getHeight();
+    GLboolean getKey(int key);
+    void setKey(int key, GLboolean val);
 private:
     GameState state;
     GLboolean keys[1024];

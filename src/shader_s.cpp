@@ -3,6 +3,8 @@
 using std::string;
 using namespace glm;
 
+Shader::Shader() : shaderProgram() {}
+
 Shader::Shader(const GLchar* vertexPath, const GLchar* fragmentPath, const GLchar* geometryPath) {
     string vertexCode;
     string fragmentCode;

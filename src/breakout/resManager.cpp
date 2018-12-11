@@ -7,6 +7,9 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
+std::map<string, Shader> ResManager::shaders;
+std::map<string, Texture> ResManager::textures;
+
 Shader ResManager::loadShader(string name, const GLchar *vertexPath, const GLchar *fragmentPath, const GLchar *geometryPath) {
     Shader shader(vertexPath, fragmentPath, geometryPath);
     shaders[name] = shader;

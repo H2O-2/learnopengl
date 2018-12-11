@@ -23,3 +23,11 @@ GLuint Game::getWidth() {
 GLuint Game::getHeight() {
     return height;
 }
+
+GLboolean Game::getKey(int key) {
+    return keys[key];
+}
+
+void Game::setKey(int key, GLboolean val) {
+    keys[key] = val;
+}
