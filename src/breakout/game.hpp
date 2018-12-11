@@ -2,6 +2,8 @@
 
 #include <glad/glad.h>
 
+#include "spriteRenderer.hpp"
+
 enum GameState {
     GAME_ACTIVE,
     GAME_MENU,
@@ -28,4 +30,5 @@ private:
     GameState state;
     GLboolean keys[1024];
     GLuint width, height;
+    SpriteRenderer *spriteRenderer;
 };

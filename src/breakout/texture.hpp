@@ -11,7 +11,7 @@ public:
     ~Texture();
     GLsizei getWidth();
     GLsizei getHeight();
-    void activeAndBind(GLenum texture);
+    void activeAndBind(GLenum textureIndex);
 private:
     GLsizei width;
     GLsizei height;

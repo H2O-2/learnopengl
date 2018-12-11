@@ -26,7 +26,7 @@ GLsizei Texture::getHeight() {
     return this->height;
 }
 
-void Texture::activeAndBind(GLenum texture) {
-    glActiveTexture(texture);
+void Texture::activeAndBind(GLenum textureIndex) {
+    glActiveTexture(textureIndex);
     glBindTexture(GL_TEXTURE_2D, this->id);
 }

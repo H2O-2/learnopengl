@@ -1,5 +1,8 @@
+#include <iostream>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 #include "game.hpp"
 #include "resManager.hpp"
@@ -20,7 +23,9 @@ int main() {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+#ifdef __APPLE__
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+#endif
 
     GLFWwindow *window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Breakout", NULL, NULL);
     if (window == NULL) {
@@ -38,12 +43,18 @@ int main() {
         return -1;
     }
 
+#ifdef __APPLE__
+    glViewport(0, 0, 2 * SCR_WIDTH, 2 * SCR_HEIGHT);
+#else
     glViewport(0, 0, SCR_WIDTH, SCR_HEIGHT);
+#endif
     glEnable(GL_CULL_FACE);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     breakout.init();
+
+    glm::mat4 projection = glm::ortho(0.0f, (float)SCR_WIDTH, (float)SCR_HEIGHT, 0.0f, -1.0f, 1.0f);
 
     while (!glfwWindowShouldClose(window)) {
         float currentFrame = glfwGetTime();
@@ -60,6 +71,8 @@ int main() {
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
+
+    // std::cout << glGetError() << '\n';
 
     return 0;
 }
