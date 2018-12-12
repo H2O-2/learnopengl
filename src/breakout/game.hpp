@@ -1,8 +1,13 @@
 #pragma once
 
+#include <vector>
+
 #include <glad/glad.h>
+#include <glm/glm.hpp>
 
 #include "spriteRenderer.hpp"
+#include "gameLevel.hpp"
+#include "gameObj.hpp"
 
 enum GameState {
     GAME_ACTIVE,
@@ -31,4 +36,12 @@ private:
     GLboolean keys[1024];
     GLuint width, height;
     SpriteRenderer *spriteRenderer;
+
+    GLuint curLevel;
+    std::vector<GameLevel> levels;
+
+    GameObj *player;
+
+    static const float PLAYER_VELOCITY;
+    static const glm::vec2 PLAYER_SIZE;
 };

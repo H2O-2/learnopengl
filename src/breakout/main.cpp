@@ -61,8 +61,8 @@ int main() {
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
 
-        breakout.processInput(currentFrame);
-        breakout.update(currentFrame);
+        breakout.processInput(deltaTime);
+        breakout.update(deltaTime);
 
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
