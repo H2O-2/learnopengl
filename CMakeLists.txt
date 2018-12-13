@@ -25,7 +25,7 @@ configure_file(config/root_directory.h.in config/root_directory.h)
 include_directories(${PROJECT_SOURCE_DIR}/src ${PROJECT_SOURCE_DIR}/include)
 
 # 添加要编译的cpp源代码，先只要一个main.cpp
-set(SRC_LIST src/glad.c src/shader_s.cpp src/stb_image.h src/breakout/game.cpp src/breakout/texture.cpp src/breakout/resManager.cpp src/breakout/spriteRenderer.cpp src/breakout/gameObj.cpp src/breakout/gameLevel.cpp ${PROJECT_SOURCE_DIR}/src/breakout/main.cpp)
+set(SRC_LIST src/glad.c src/shader_s.cpp src/stb_image.h src/breakout/game.cpp src/breakout/texture.cpp src/breakout/resManager.cpp src/breakout/spriteRenderer.cpp src/breakout/gameObj.cpp src/breakout/gameLevel.cpp src/breakout/ballObj.cpp ${PROJECT_SOURCE_DIR}/src/breakout/main.cpp)
 # set(SRC_LIST src/glad.c src/shader_s.cpp src/stb_image.h src/camera.h ${PROJECT_SOURCE_DIR}/src/advancedLighting.cpp)
 
 # 添加项目的构建目标，一个可执行程序，叫：${PROJECT_NAME}, 也就是文件开头定义的 “red”

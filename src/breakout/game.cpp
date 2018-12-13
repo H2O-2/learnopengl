@@ -5,8 +5,10 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <GLFW/glfw3.h>
 
-const glm::vec2 Game::PLAYER_SIZE = glm::vec2(150.0f, 25.0f);
+const float Game::BALL_RADIUS = 12.5f;
+const glm::vec2 Game::INIT_BALL_VELOCITY = glm::vec2(100.0f, -350.0f);
 const float Game::PLAYER_VELOCITY = 500.0f;
+const glm::vec2 Game::PLAYER_SIZE = glm::vec2(150.0f, 25.0f);
 
 Game::Game(GLuint width, GLuint height) : width(width), height(height), keys(), state(GAME_ACTIVE), curLevel(), levels() {}
 
@@ -21,6 +23,7 @@ void Game::init() {
     ResManager::loadTexture("block", FileSystem::getPath("src/breakout/textures/block.png").c_str());
     ResManager::loadTexture("background", FileSystem::getPath("src/breakout/textures/background.jpg").c_str());
     ResManager::loadTexture("paddle", FileSystem::getPath("src/breakout/textures/paddle.png").c_str());
+    ResManager::loadTexture("ball", FileSystem::getPath("src/breakout/textures/awesomeface.png").c_str());
 
     // load levels
     GameLevel standard;
@@ -40,29 +43,53 @@ void Game::init() {
     glm::vec2 playerPosn = glm::vec2(width * 0.5f - PLAYER_SIZE.x * 0.5f, height - PLAYER_SIZE.y);
     Texture playerTexture = ResManager::getTexture("paddle");
     player = new GameObj(playerPosn, PLAYER_SIZE, playerTexture);
+
+    // initialize ball
+    glm::vec2 ballPosn = playerPosn + glm::vec2(PLAYER_SIZE.x * 0.5f - BALL_RADIUS, -BALL_RADIUS * 2.0f);
+    Texture ballTexture = ResManager::getTexture("ball");
+    ball = new BallObj(ballPosn, BALL_RADIUS, INIT_BALL_VELOCITY, ballTexture);
 }
 
 void Game::processInput(GLfloat dt) {
     if (state == GAME_ACTIVE) {
+        // player movement
         GLfloat displament = PLAYER_VELOCITY * dt;
-        GLfloat posnX = 0;
+        GLfloat posnX = 0, ballX = 0;
         if (keys[GLFW_KEY_A] && player->position.x >= 0) {
             posnX = player->position.x - displament;
+            ballX = ball->position.x - displament;
             if (posnX < 0) {
                 posnX = 0;
             }
             player->position.x = posnX;
-        } else if (keys[GLFW_KEY_D] && player->position.x <= width - player->size.x) {
+
+            if (ball->stuck) {
+                ball->position.x = posnX + player->size.x * 0.5f - ball->radius;
+            }
+        }
+
+        if (keys[GLFW_KEY_D] && player->position.x <= width - player->size.x) {
             posnX = player->position.x + displament;
             if (posnX > width - player->size.x) {
                 posnX = width - player->size.x;
             }
             player->position.x = posnX;
+
+            if (ball->stuck) {
+                ball->position.x = posnX + player->size.x * 0.5f - ball->radius;
+            }
+        }
+
+        // release ball
+        if (keys[GLFW_KEY_SPACE]) {
+            ball->stuck = false;
         }
     }
 }
 
-void Game::update(GLfloat dt) {}
+void Game::update(GLfloat dt) {
+    ball->move(dt, width);
+}
 
 void Game::render() {
     if (state == GAME_ACTIVE) {
@@ -73,6 +100,9 @@ void Game::render() {
 
         // render player
         player->draw(*spriteRenderer);
+
+        // render ball
+        ball->draw(*spriteRenderer);
     }
 }
 

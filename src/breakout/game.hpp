@@ -7,7 +7,7 @@
 
 #include "spriteRenderer.hpp"
 #include "gameLevel.hpp"
-#include "gameObj.hpp"
+#include "ballObj.hpp"
 
 enum GameState {
     GAME_ACTIVE,
@@ -41,7 +41,10 @@ private:
     std::vector<GameLevel> levels;
 
     GameObj *player;
+    BallObj *ball;
 
+    static const float BALL_RADIUS;
+    static const glm::vec2 INIT_BALL_VELOCITY;
     static const float PLAYER_VELOCITY;
     static const glm::vec2 PLAYER_SIZE;
 };
