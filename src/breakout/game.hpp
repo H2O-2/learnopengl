@@ -24,6 +24,7 @@ public:
     void processInput(GLfloat dt);
     void update(GLfloat dt);
     void render();
+    void doCollision();
 
     GameState getCurState();
     void setCurState(GameState state);
@@ -31,7 +32,13 @@ public:
     GLuint getHeight();
     GLboolean getKey(int key);
     void setKey(int key, GLboolean val);
+    void printLevels();
 private:
+    static const float BALL_RADIUS;
+    static const glm::vec2 INIT_BALL_VELOCITY;
+    static const float PLAYER_VELOCITY;
+    static const glm::vec2 PLAYER_SIZE;
+
     GameState state;
     GLboolean keys[1024];
     GLuint width, height;
@@ -43,8 +50,5 @@ private:
     GameObj *player;
     BallObj *ball;
 
-    static const float BALL_RADIUS;
-    static const glm::vec2 INIT_BALL_VELOCITY;
-    static const float PLAYER_VELOCITY;
-    static const glm::vec2 PLAYER_SIZE;
+    GLboolean checkBallCollision(GameObj &obj, BallObj &ball);
 };

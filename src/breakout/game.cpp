@@ -10,6 +10,14 @@ const glm::vec2 Game::INIT_BALL_VELOCITY = glm::vec2(100.0f, -350.0f);
 const float Game::PLAYER_VELOCITY = 500.0f;
 const glm::vec2 Game::PLAYER_SIZE = glm::vec2(150.0f, 25.0f);
 
+void Game::printLevels() {
+    for (auto level : levels) {
+        for (auto brick : level.bricks) {
+            std::cout << brick.destroyed << '\n';
+        }
+    }
+}
+
 Game::Game(GLuint width, GLuint height) : width(width), height(height), keys(), state(GAME_ACTIVE), curLevel(), levels() {}
 
 Game::~Game() {
@@ -89,6 +97,7 @@ void Game::processInput(GLfloat dt) {
 
 void Game::update(GLfloat dt) {
     ball->move(dt, width);
+    doCollision();
 }
 
 void Game::render() {
@@ -103,6 +112,14 @@ void Game::render() {
 
         // render ball
         ball->draw(*spriteRenderer);
+    }
+}
+
+void Game::doCollision() {
+    for (auto &brick : levels.at(curLevel - 1).bricks) {
+        if (!brick.destroyed && !brick.isSolid && checkBallCollision(brick, *ball)) {
+            brick.destroyed = true;
+        }
     }
 }
 
@@ -128,4 +145,16 @@ GLboolean Game::getKey(int key) {
 
 void Game::setKey(int key, GLboolean val) {
     keys[key] = val;
+}
+
+GLboolean Game::checkBallCollision(GameObj &obj, BallObj &ball) {
+    // return obj1.position.x + obj1.size.x >= obj2.position.x && obj2.position.x + obj2.size.x >= obj1.position.x &&
+    //     obj1.position.y + obj1.size.y >= obj2.position.y && obj2.position.y + obj2.size.y >= obj1.position.y;
+
+    glm::vec2 objHalfSize = glm::vec2(obj.size.x * 0.5f, obj.size.y * 0.5f);
+    glm::vec2 objCenter = glm::vec2(obj.position.x + objHalfSize.x, obj.position.y + objHalfSize.y);
+    glm::vec2 ballCenter = glm::vec2(ball.position + glm::vec2(ball.radius));
+    glm::vec2 clampedDistance = glm::clamp(ballCenter - objCenter, -objHalfSize, objHalfSize);
+
+    return glm::length((objCenter + clampedDistance) - ballCenter) < ball.radius;
 }
