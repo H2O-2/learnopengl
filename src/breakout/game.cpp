@@ -98,6 +98,10 @@ void Game::processInput(GLfloat dt) {
 void Game::update(GLfloat dt) {
     ball->move(dt, width);
     doCollision();
+
+    if (ball->position.y >= height) {
+        reset();
+    }
 }
 
 void Game::render() {
@@ -117,8 +121,48 @@ void Game::render() {
 
 void Game::doCollision() {
     for (auto &brick : levels.at(curLevel - 1).bricks) {
-        if (!brick.destroyed && !brick.isSolid && checkBallCollision(brick, *ball)) {
-            brick.destroyed = true;
+        if (!brick.destroyed) {
+            Collision curCollision = checkBallCollision(brick, *ball);
+
+            if (std::get<0>(curCollision)) {
+                if (!brick.isSolid) {
+                    brick.destroyed = GL_TRUE;
+                }
+
+                Direction curDirection = std::get<1>(curCollision);
+                glm::vec2 curVector = std::get<2>(curCollision);
+                if (curDirection == LEFT || curDirection == RIGHT) {
+                    ball->velocity.x = -ball->velocity.x;
+                    GLfloat penetration = ball->radius - glm::abs(curVector.x);
+                    if (curDirection == LEFT) {
+                        ball->position.x -= penetration;
+                    } else {
+                        ball->position.x += penetration;
+                    }
+                } else {
+                    ball->velocity.y = -ball->velocity.y;
+                    GLfloat penetration = ball->radius - glm::abs(curVector.y);
+                    if (curDirection == UP) {
+                        ball->position.y -= penetration;
+                    } else {
+                        ball->position.y += penetration;
+                    }
+                }
+            }
+        }
+    }
+
+    if (!ball->stuck) {
+        Collision playerCollision = checkBallCollision(*player, *ball);
+        if (std::get<0>(playerCollision)) {
+            GLfloat paddleCenter = player->position.x + player->size.x / 2;
+            GLfloat distanceToCenter = (ball->position.x + ball->radius) - paddleCenter;
+            GLfloat percentage = distanceToCenter / (player->size.x) / 2;
+            GLfloat strength = 2.0f;
+            glm::vec2 oldVelocity = ball->velocity;
+            ball->velocity.x = INIT_BALL_VELOCITY.x * percentage * strength;
+            ball->velocity.y = -1 * glm::abs(ball->velocity.y);
+            ball->velocity = glm::normalize(ball->velocity) * glm::length(oldVelocity);
         }
     }
 }
@@ -147,7 +191,7 @@ void Game::setKey(int key, GLboolean val) {
     keys[key] = val;
 }
 
-GLboolean Game::checkBallCollision(GameObj &obj, BallObj &ball) {
+Collision Game::checkBallCollision(GameObj &obj, BallObj &ball) {
     // return obj1.position.x + obj1.size.x >= obj2.position.x && obj2.position.x + obj2.size.x >= obj1.position.x &&
     //     obj1.position.y + obj1.size.y >= obj2.position.y && obj2.position.y + obj2.size.y >= obj1.position.y;
 
@@ -155,6 +199,43 @@ GLboolean Game::checkBallCollision(GameObj &obj, BallObj &ball) {
     glm::vec2 objCenter = glm::vec2(obj.position.x + objHalfSize.x, obj.position.y + objHalfSize.y);
     glm::vec2 ballCenter = glm::vec2(ball.position + glm::vec2(ball.radius));
     glm::vec2 clampedDistance = glm::clamp(ballCenter - objCenter, -objHalfSize, objHalfSize);
+    glm::vec2 ballToObjEdgeVec = (objCenter + clampedDistance) - ballCenter;
 
-    return glm::length((objCenter + clampedDistance) - ballCenter) < ball.radius;
+    if (glm::length(ballToObjEdgeVec) < ball.radius) {
+        return std::make_tuple(GL_TRUE, vectorDirection(ballToObjEdgeVec), ballToObjEdgeVec);
+    } else {
+        return std::make_tuple(GL_FALSE, UP, glm::vec2());
+    }
+}
+
+Direction Game::vectorDirection(glm::vec2 vector) {
+    glm::vec2 compass[] = {
+        glm::vec2(0.0f, 1.0f),
+        glm::vec2(1.0f, 0.0f),
+        glm::vec2(0.0f, -1.0f),
+        glm::vec2(-1.0f, 0.0f)
+    };
+
+    Direction direction = UP;
+    GLfloat maxDot = 0.0f;
+
+    for (int i = 0; i < 4; ++i) {
+        GLfloat vectorDot = glm::dot(compass[i], vector);
+        if (vectorDot > maxDot) {
+            maxDot = vectorDot;
+            direction = (Direction)i;
+        }
+    }
+
+    return direction;
+}
+
+void Game::reset() {
+    // reset level
+    levels[0].reset(width, height * 0.5f);
+    // reset player
+    player->position = glm::vec2(width * 0.5f - PLAYER_SIZE.x * 0.5f, height - PLAYER_SIZE.y);
+    player->size = PLAYER_SIZE;
+    // reset ball
+    ball->reset(player->position + glm::vec2(PLAYER_SIZE.x * 0.5f - BALL_RADIUS, -BALL_RADIUS * 2.0f), INIT_BALL_VELOCITY);
 }

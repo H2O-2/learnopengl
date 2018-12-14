@@ -11,7 +11,7 @@ public:
     glm::vec3 color;
     GLfloat rotation;
     GLboolean isSolid;
-    bool destroyed;
+    GLboolean destroyed;
     Texture sprite;
 
     GameObj();

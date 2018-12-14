@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <tuple>
 
 #include <glad/glad.h>
 #include <glm/glm.hpp>
@@ -14,6 +15,15 @@ enum GameState {
     GAME_MENU,
     GAME_WIN
 };
+
+enum Direction {
+    UP,
+    RIGHT,
+    DOWN,
+    LEFT
+};
+
+typedef std::tuple<GLboolean, Direction, glm::vec2> Collision;
 
 class Game {
 public:
@@ -50,5 +60,7 @@ private:
     GameObj *player;
     BallObj *ball;
 
-    GLboolean checkBallCollision(GameObj &obj, BallObj &ball);
+    Collision checkBallCollision(GameObj &obj, BallObj &ball);
+    Direction vectorDirection(glm::vec2 vector);
+    void reset();
 };

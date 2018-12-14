@@ -8,12 +8,17 @@
 
 GameLevel::GameLevel() : bricks() {}
 
+void GameLevel::printLevels() {
+    for (auto brick : bricks) {
+        std::cout << brick.destroyed << '\n';
+    }
+}
+
 void GameLevel::load(const GLchar *file, GLuint width, GLuint height) {
     // clear old level
     bricks.clear();
     // read from file
     std::ifstream levelFile;
-    std::vector<std::vector<GLuint>> tileData;
 
     levelFile.exceptions(std::ifstream::badbit);
 
@@ -34,7 +39,7 @@ void GameLevel::load(const GLchar *file, GLuint width, GLuint height) {
         levelFile.close();
 
         if (tileData.size() > 0) {
-            init(tileData, width, height);
+            init(width, height);
         }
     } catch (std::ifstream::failure e) {
         std::cout << "ERROR::LEVEL::FILE_NOT_SUCCESSFULLY_READ: " << std::endl;
@@ -50,6 +55,11 @@ void GameLevel::draw(SpriteRenderer &renderer) {
     }
 }
 
+void GameLevel::reset(GLuint width, GLuint height) {
+    bricks.clear();
+    init(width, height);
+}
+
 GLboolean GameLevel::isComplete() {
     for (auto tile : bricks) {
         if (!tile.isSolid && !tile.destroyed) {
@@ -60,7 +70,7 @@ GLboolean GameLevel::isComplete() {
     return GL_TRUE;
 }
 
-void GameLevel::init(std::vector<std::vector<GLuint>> &tileData, GLuint width, GLuint height) {
+void GameLevel::init(GLuint width, GLuint height) {
     GLuint rowNum = tileData.size();
     GLuint columnNum = tileData.at(0).size();
     GLfloat brickWidth = (GLfloat)width / (GLfloat)columnNum;
@@ -75,6 +85,7 @@ void GameLevel::init(std::vector<std::vector<GLuint>> &tileData, GLuint width, G
             Texture blockTexture = ResManager::getTexture("block");
             if (curTile == SOLID_BRICK) {
                 gameObj = GameObj(posn, size, ResManager::getTexture("blockSolid"), glm::vec3(1.0f));
+                gameObj.isSolid = GL_TRUE;
             } else if (curTile == BRICK_1) {
                 gameObj = GameObj(posn, size, blockTexture, glm::vec3(0.2f, 0.6f, 1.0f));
             } else if (curTile == BRICK_2) {

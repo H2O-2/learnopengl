@@ -13,6 +13,7 @@ public:
     GameLevel();
     void load(const GLchar *file, GLuint width, GLuint height);
     void draw(SpriteRenderer &renderer);
+    void reset(GLuint width, GLuint height);
     GLboolean isComplete();
 private:
     static const unsigned int SOLID_BRICK = 1;
@@ -21,5 +22,8 @@ private:
     static const unsigned int BRICK_3 = 4;
     static const unsigned int BRICK_4 = 5;
 
-    void init(std::vector<std::vector<GLuint>> &tileData, GLuint width, GLuint height);
+    std::vector<std::vector<GLuint>> tileData;
+
+    void init(GLuint width, GLuint height);
+    void printLevels();
 };
