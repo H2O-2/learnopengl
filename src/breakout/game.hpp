@@ -9,6 +9,7 @@
 #include "spriteRenderer.hpp"
 #include "gameLevel.hpp"
 #include "ballObj.hpp"
+#include "particleGenerator.hpp"
 
 enum GameState {
     GAME_ACTIVE,
@@ -59,6 +60,7 @@ private:
 
     GameObj *player;
     BallObj *ball;
+    ParticleGenerator *particleGenerator;
 
     Collision checkBallCollision(GameObj &obj, BallObj &ball);
     Direction vectorDirection(glm::vec2 vector);

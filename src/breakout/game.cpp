@@ -22,16 +22,22 @@ Game::Game(GLuint width, GLuint height) : width(width), height(height), keys(), 
 
 Game::~Game() {
     delete spriteRenderer;
+    delete player;
+    delete ball;
+    delete particleGenerator;
 }
 
 void Game::init() {
-    // load sprite
+    // load shader
     ResManager::loadShader("spriteShader", FileSystem::getPath("src/breakout/shaders/sprite.vert").c_str(), FileSystem::getPath("src/breakout/shaders/sprite.frag").c_str());
+    ResManager::loadShader("particle", FileSystem::getPath("src/breakout/shaders/particle.vert").c_str(), FileSystem::getPath("src/breakout/shaders/particle.frag").c_str());
+    // load sprite
     ResManager::loadTexture("blockSolid", FileSystem::getPath("src/breakout/textures/block_solid.png").c_str());
     ResManager::loadTexture("block", FileSystem::getPath("src/breakout/textures/block.png").c_str());
     ResManager::loadTexture("background", FileSystem::getPath("src/breakout/textures/background.jpg").c_str());
     ResManager::loadTexture("paddle", FileSystem::getPath("src/breakout/textures/paddle.png").c_str());
     ResManager::loadTexture("ball", FileSystem::getPath("src/breakout/textures/awesomeface.png").c_str());
+    ResManager::loadTexture("particle", FileSystem::getPath("src/breakout/textures/particle.png").c_str());
 
     // load levels
     GameLevel standard;
@@ -56,6 +62,14 @@ void Game::init() {
     glm::vec2 ballPosn = playerPosn + glm::vec2(PLAYER_SIZE.x * 0.5f - BALL_RADIUS, -BALL_RADIUS * 2.0f);
     Texture ballTexture = ResManager::getTexture("ball");
     ball = new BallObj(ballPosn, BALL_RADIUS, INIT_BALL_VELOCITY, ballTexture);
+
+    // initialize particles
+    Shader particleShader = ResManager::getShader("particle");
+    Texture particleTexture = ResManager::getTexture("particle");
+    particleShader.use();
+    particleShader.setInt("sprite", 0);
+    particleShader.setMat4("projection", projection);
+    particleGenerator = new ParticleGenerator(particleShader, particleTexture, 500);
 }
 
 void Game::processInput(GLfloat dt) {
@@ -99,6 +113,8 @@ void Game::update(GLfloat dt) {
     ball->move(dt, width);
     doCollision();
 
+    particleGenerator->update(dt, *ball, 2, glm::vec2(ball->radius / 2));
+
     if (ball->position.y >= height) {
         reset();
     }
@@ -116,6 +132,9 @@ void Game::render() {
 
         // render ball
         ball->draw(*spriteRenderer);
+
+        // render particles
+        particleGenerator->draw();
     }
 }
 
