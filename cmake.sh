@@ -14,5 +14,5 @@ if [[ "$OSTYPE" = "msys" ]]; then
 else
     cmake .. -G "Ninja" -DCMAKE_EXPORT_COMPILE_COMMANDS=1
     cmake --build .
-    cp build/compile_commands.json compile_commands.json
+    cp compile_commands.json ../compile_commands.json
 fi

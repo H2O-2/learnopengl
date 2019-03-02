@@ -8,7 +8,7 @@ else()
 	set(CXX_FLAGS -std=c++11 -g -Wall -fcolor-diagnostics)
 endif()
 string(REPLACE ";" " " CMAKE_CXX_FLAGS "${CXX_FLAGS}")
-set(CMAKE_CXX_FLAGS_DEBUG   "-O0" )
+# set(CMAKE_CXX_FLAGS_DEBUG   "-O0" )
 set(CMAKE_CXX_FLAGS_RELEASE "-O2 -finline-limit=1000 -DNDEBUG " )
 
 # 可选，设置可执行程序的输出目录，我习惯于放在build/bin. 库放在build/lib下
