@@ -6,7 +6,11 @@
 #include <glad/glad.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include <SDL.h>
+#if __linux__
+    #include <SDL2/SDL.h>
+#else
+    #include <SDL.h>
+#endif
 
 #include "shader_s.h"
 #include "camera.h"
@@ -68,6 +72,7 @@ int main(int, char**) {
 
     int framebufferWidth, framebufferHeight;
     SDL_GL_GetDrawableSize(window, &framebufferWidth, &framebufferHeight);
+    std::cout << framebufferHeight << '\n';
     glViewport(0, 0, framebufferWidth, framebufferHeight);
 
     glEnable(GL_DEPTH_TEST);
