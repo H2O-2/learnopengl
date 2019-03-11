@@ -19,7 +19,11 @@
 const unsigned int SCR_WIDTH = 1280;
 const unsigned int SCR_HEIGHT = 720;
 
-Camera camera(glm::vec3(1.0f, 0.0f, 5.0f));
+const int NR_ROWS = 7;
+const int NR_COLUMNS = 7;
+const float SPACING = 2.5f;
+
+Camera camera(glm::vec3(0.0f, 0.0f, 25.0f));
 float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
@@ -32,6 +36,7 @@ uint32_t VAO;
 uint32_t indexNum;
 
 void initSphere(const uint16_t& stacks, const uint16_t& sectors, const float& radius);
+void renderSphere();
 
 void outputError(const std::string& error) {
     std::cerr << error << '\n';
@@ -72,14 +77,35 @@ int main(int, char**) {
 
     int framebufferWidth, framebufferHeight;
     SDL_GL_GetDrawableSize(window, &framebufferWidth, &framebufferHeight);
-    std::cout << framebufferHeight << '\n';
     glViewport(0, 0, framebufferWidth, framebufferHeight);
 
     glEnable(GL_DEPTH_TEST);
 
+    // pass shader values
     Shader pbr(FileSystem::getPath("src/pbrLighting.vert").c_str(), FileSystem::getPath("src/pbrLighting.frag").c_str());
     pbr.use();
+    pbr.setVec3("albedo", 0.5f, 0.0f, 0.0f);
+    pbr.setFloat("ao", 1.0f);
 
+    glm::vec3 lightPositions[] = {
+        glm::vec3(-10.0f,  10.0f, 10.0f),
+        glm::vec3( 10.0f,  10.0f, 10.0f),
+        glm::vec3(-10.0f, -10.0f, 10.0f),
+        glm::vec3( 10.0f, -10.0f, 10.0f),
+    };
+    glm::vec3 lightColors[] = {
+        glm::vec3(300.0f, 300.0f, 300.0f),
+        glm::vec3(300.0f, 300.0f, 300.0f),
+        glm::vec3(300.0f, 300.0f, 300.0f),
+        glm::vec3(300.0f, 300.0f, 300.0f)
+    };
+
+    for (int i = 0; i < sizeof(lightPositions) / sizeof(lightPositions[0]); ++i) {
+        pbr.setVec3("lightPosns[" + std::to_string(i) + "]", lightPositions[i]);
+        pbr.setVec3("lightColors[" + std::to_string(i) + "]", lightColors[i]);
+    }
+
+    // initialize sphere
     initSphere(32, 64, 1.0);
 
     bool quit = false;
@@ -145,21 +171,37 @@ int main(int, char**) {
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 50.0f);
         glm::mat4 view = camera.GetViewMatrix();
         glm::mat4 model;
 
+        glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 50.0f);
         pbr.setMat4("projection", projection);
         pbr.setMat4("view", view);
         pbr.setMat4("model", model);
+        pbr.setVec3("camPos", camera.Position);
 
-        // std::cout << glGetError() << '\n';
-        glBindVertexArray(VAO);
-        glDrawElements(GL_TRIANGLES, indexNum, GL_UNSIGNED_INT, 0);
-        glBindVertexArray(0);
+        for (int row = 0; row < NR_ROWS; ++row) {
+            // metallic value to vary between rows
+            std::cout << (float)row / (float)NR_ROWS << '\n';
+            pbr.setFloat("metallic", (float)row / (float)NR_ROWS);
+            for (int col = 0; col < NR_COLUMNS; ++col) {
+                pbr.setFloat("roughness", glm::clamp((float)col / (float)NR_COLUMNS, 0.05f, 1.0f));
+
+                model = glm::mat4(1.0f);
+                model = glm::translate(model, glm::vec3((col - (NR_COLUMNS / 2)) * SPACING, (row - (NR_ROWS / 2)) * SPACING, 0.0f));
+                pbr.setMat4("model", model);
+                renderSphere();
+            }
+        }
 
         SDL_GL_SwapWindow(window);
     }
+
+    SDL_GL_DeleteContext(glContext);
+    SDL_DestroyWindow(window);
+    SDL_Quit();
+
+    return 0;
 }
 
 // Referenced from http://www.songho.ca/opengl/gl_sphere.html
@@ -252,3 +294,10 @@ void initSphere(const uint16_t& stacks, const uint16_t& sectors, const float& ra
     glEnableVertexAttribArray(2);
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, stride, (void*)(6 * sizeof(float)));
 }
+
+void renderSphere() {
+    glBindVertexArray(VAO);
+    glDrawElements(GL_TRIANGLES, indexNum, GL_UNSIGNED_INT, 0);
+    glBindVertexArray(0);
+}
+
